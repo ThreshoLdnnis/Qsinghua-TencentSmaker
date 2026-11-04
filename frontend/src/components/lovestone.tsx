@@ -67,7 +67,6 @@ export function LoveStone({ liveEnabled }: { liveEnabled: boolean }) {
   const [privacy, setPrivacy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [backgroundPaused, setBackgroundPaused] = useState(false);
   const focusDestination = useRef(false);
   const request = useRef<AbortController | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -243,8 +242,7 @@ export function LoveStone({ liveEnabled }: { liveEnabled: boolean }) {
     go("universe");
   }
 
-  if (view === "universe") return <CinematicHome onNavigate={go} mainRef={main}
-    pausedByUser={backgroundPaused} onPauseChange={setBackgroundPaused} />;
+  if (view === "universe") return <CinematicHome onNavigate={go} mainRef={main} />;
 
   return (
     <div className={`shell ${view === "caseforge" ? "" : "world-shell"} world-${view}`}>
@@ -284,7 +282,7 @@ export function LoveStone({ liveEnabled }: { liveEnabled: boolean }) {
         <div key={view} className="view-enter">
           {view === "agent" && <section className="agent-view" aria-labelledby="agent-title">
             <div className="agent-intro-screen">
-              <WorldMedia src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4" poster="/images/agent-bg.jpg" fadeLoop shift />
+              <WorldMedia src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4" poster="/images/agent-bg.jpg" shift />
               <div className="agent-intro-shade" aria-hidden="true" />
               <div className="agent-intro-content">
                 <span className="agent-intro-kicker">LOVESTONE / PERSONAL AGENT</span>

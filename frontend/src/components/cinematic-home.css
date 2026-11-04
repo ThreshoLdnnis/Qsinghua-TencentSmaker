@@ -79,9 +79,8 @@
 .cinema-journey-links small { opacity: .76; font-size: 9px; letter-spacing: .12em; transition: opacity .25s; }
 .cinema-journey-links > button:hover { transform: translateY(-3px); }
 .cinema-journey-links > button:hover small { opacity: 1; }
-.cinema-edge { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; }
+.cinema-edge { margin-top: 16px; }
 .cinema-demo-note { font-size: 10px; color: #fffe; letter-spacing: .08em; text-shadow: 0 1px 12px #203c4699; }
-.cinema-playback { display: inline-flex; gap: 6px; align-items: center; padding: 7px 10px; font-size: 10px; color: white; }
 .cinema-intro { position: fixed; padding: 0; margin: auto; width: min(520px,calc(100vw - 32px)); max-height: calc(100svh - 40px); overflow: auto; border: 1px solid #e8caff45; border-radius: 24px; color: #fff1f7; background: #21192b; color-scheme: dark; }
 .cinema-intro[open] { animation: cinema-dialog-in .3s ease both; }
 .cinema-intro::backdrop { background: #101e2e80; backdrop-filter: blur(12px); }

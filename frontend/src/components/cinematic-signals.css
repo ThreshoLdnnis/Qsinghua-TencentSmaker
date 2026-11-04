@@ -31,7 +31,6 @@
 .cinematic-signals [tabindex="-1"] { scroll-margin-top: 105px; }
 .cinematic-signals [tabindex="-1"]:focus { outline: none; }
 .signals-cinematic { position: relative; isolation: isolate; overflow: hidden; }
-.signals-cinematic .world-media-toggle { z-index: 4; }
 .signals-cinematic .signals-media { background-color: #090a0e; }
 .signals-shade { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
 .signals-centered { position: relative; z-index: 2; width: min(100%, 1000px); text-align: center; }

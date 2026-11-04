@@ -8,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-CN"><body>{children}</body></html>;
+  // Browser recorders can add attributes to the document root before hydration.
+  return (
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body>{children}</body>
+    </html>
+  );
 }
