@@ -1,5 +1,7 @@
 # 清华-腾讯S-Makers向善创客计划青少年心理平台\*翎语
 
+**[在线体验翎语](https://qsinghua.lingozm.cn/)**
+
 ![翎语 · 心象宇宙封面](docs/assets/cover.png)
 
 <p align="center">
