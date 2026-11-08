@@ -2,6 +2,10 @@
 
 # Runtime V0.3 运行契约
 
+Runtime 0.5.0 增加浏览器语音输入。上传、转写、取消、缓存与预算约定见 [语音输入说明](voice-input.md)。转写结果通过用户编辑和显式发送进入原有会话流程。
+
+Runtime 0.6.0 将 DeepSeek 与 ASR 接入 [统一外部调用调度](call-scheduler.md)。共享总并发、供应商并发、有限等待队列和包括排队的调用总时限，GET /runtime/calls 提供当前进程的脱敏统计。
+
 ## 两种状态
 
 Session.state 是业务阶段，现阶段保持 INITIAL。
@@ -92,3 +96,15 @@ Runtime 0.4.0 新增显式保存、列表、恢复与按版本删除；启动和
 恢复保留已完成对话、草稿和来源依赖，旧请求编号变为 request_restored；不重放未完成调用。
 等待/运行阶段恢复后为 CANCELLED / restore_interrupted；待确认草稿换发凭据；已结束会话仍结束。
 清空内存与删除磁盘存档是两项独立操作，具体接口和预算见 [会话保存与恢复](会话保存与恢复.md)。
+
+## 模块 7 心理流程（2026-11-05）
+
+服务端 PSYCHOLOGY_ENABLED=true 时，同一消息入口执行结构化心理流程，返回 review_status=unreviewed。来源依赖继承、消息内纠正、撤回后缓存墓碑、计算中独立纠正中断与路线保持见 [主流程集成](agent-support-integration.md)。心理会话不进入工程 demo 待确认，不允许降级为普通聊天；心理流程使用显式选择的 v2 业务存档，恢复不重新授予设备用途；详见 [业务存档](business-archives.md)。普通模式原契约继续适用。
+
+## 持续前端流程（2026-11-05）
+
+Next 同源 `/api/support/*` 保留同一会话；`support-state` 提供当前 `active_request_id` 与 `run_id` 供显式取消，不以 fetch 断开代替后端取消。页面只采纳当前版本的读取与消息结果；撤回/纠正后迟到结果不覆盖当前画布或趋势。显式固定脚本模式由服务端配置，与真实模型模式清楚区分。见 [前端支持流程](frontend-support-integration.md)。
+
+## 产品账号边界与经历卡（2026-11-08）
+
+公开入口为 `app.product.main:create_app --factory`，不公开原工程入口。认证主体决定所属 SessionService 与卡片数据库分区；CSRF/Origin、对象版本和确认令牌共同约束写入。真实结构化理解、用户纠正与确认契约见 [四字段闭环](structured-reflection-loop.md)。理解不是自动记忆；K/R/N 后需要主动保存，未来参考与当轮发送分别授权。经历卡可撤回/删除，相关对话上下文同时清除；账号退出/删除先冻结旧服务并中止在途计算，再进行磁盘操作。并发幂等、迟到结果及跨用户隔离纳入产品回归。详见 [产品 API 与边界](product-loop.md)。

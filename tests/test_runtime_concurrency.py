@@ -1,5 +1,5 @@
 import asyncio
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -83,12 +83,21 @@ def test_lifecycle_barrier_rejects_already_queued_messages(monkeypatch, action):
 
     async def run():
         model = BlockingModel()
+        queued_at_session_lock = asyncio.Event()
+
+        class ObservedLock(asyncio.Lock):
+            async def acquire(self):
+                if self.locked():
+                    queued_at_session_lock.set()
+                return await super().acquire()
+
         main.app.dependency_overrides[get_chat_model] = lambda: model
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=main.app), base_url="http://test"
         ) as client:
             session_id = (await client.post("/sessions")).json()["session_id"]
             base = f"/sessions/{session_id}"
+            main.session_service.require(UUID(session_id)).lock = ObservedLock()
             first = asyncio.create_task(
                 client.post(base + "/messages", json={"content": "first"})
             )
@@ -96,7 +105,9 @@ def test_lifecycle_barrier_rejects_already_queued_messages(monkeypatch, action):
             queued = asyncio.create_task(
                 client.post(base + "/messages", json={"content": "queued"})
             )
-            await asyncio.sleep(0.02)
+            # A started HTTP task may still be awaiting its FastAPI dependency
+            # thread; wait for admission to the session lock, not elapsed time.
+            await asyncio.wait_for(queued_at_session_lock.wait(), 1)
             if action == "end":
                 stopped = await client.post(base + "/end")
             else:

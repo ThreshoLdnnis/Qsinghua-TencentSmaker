@@ -1,0 +1,17 @@
+{$PUBLIC_DOMAIN} {
+    encode zstd gzip
+    request_body {
+        max_size 4MB
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        -Server
+    }
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle {
+        reverse_proxy web:3000
+    }
+}

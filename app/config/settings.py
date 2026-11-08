@@ -22,9 +22,40 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=800, ge=1, le=4096)
     llm_thinking: Literal["enabled", "disabled"] = "disabled"
 
+    psychology_enabled: bool = False
+    psychology_demo_mode: bool = False
+    psychology_require_understanding: bool = False
+    product_data_dir: Path = PROJECT_ROOT / "data/product"
+    product_origin: str = "http://localhost:3000"
+    product_cookie_secure: bool = True
+    psychology_demo_route: Literal['routine_support', 'clarify_safety', 'safety_support', 'urgent_real_world_help'] = 'routine_support'
+    analysis_timezone: str = "Asia/Shanghai"
+
     runtime_max_steps: int = Field(default=8, ge=1, le=100)
     runtime_max_context_chars: int = Field(default=48000, ge=1)
     runtime_max_requests_per_session: int = Field(default=500, ge=1, le=10000)
+
+    external_max_concurrent: int = Field(default=4, ge=1, le=100)
+    external_max_queue: int = Field(default=16, ge=0, le=1000)
+    external_queue_timeout_seconds: float = Field(default=5, gt=0, le=180)
+    llm_max_concurrent: int = Field(default=2, ge=1, le=100)
+
+    asr_provider: Literal["disabled", "tencent"] = "disabled"
+    tencent_secret_id: SecretStr = SecretStr("")
+    tencent_secret_key: SecretStr = SecretStr("")
+    tencent_token: SecretStr = SecretStr("")
+    asr_engine: Literal["16k_zh", "16k_zh-PY", "16k_en", "16k_yue"] = "16k_zh"
+    asr_timeout_seconds: float = Field(default=20, gt=0, le=120)
+    asr_max_concurrent: int = Field(default=2, ge=1, le=10)
+    asr_max_requests: int = Field(default=100, ge=1, le=1000)
+    asr_cache_seconds: float = Field(default=600, ge=1, le=3600)
+
+    @property
+    def asr_configured(self) -> bool:
+        return self.asr_provider == "tencent" and bool(
+            self.tencent_secret_id.get_secret_value().strip()
+            and self.tencent_secret_key.get_secret_value().strip()
+        )
 
     @property
     def key_configured(self) -> bool:
