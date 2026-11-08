@@ -176,7 +176,7 @@ export function useSupportJourney(active: boolean, account?: AccountSession) {
       if (mounted.current) { setHealth(h); setCatalog(c); }
     }).catch((issue) => { configured.current = false; fail(issue); });
     api.support().then((value) => { if (mounted.current) setSupport(value); }).catch(() => undefined);
-    api.listArchives().then((value) => { if (mounted.current) setArchives(value); }).catch(() => undefined);
+    if (!accountRef.current?.user) api.listArchives().then((value) => { if (mounted.current) setArchives(value); }).catch(() => undefined);
     void refreshCards().catch(fail);
   }, [active, api, refreshCards, fail]);
 
@@ -359,6 +359,7 @@ export function useSupportJourney(active: boolean, account?: AccountSession) {
   });
 
   const save = () => actionRun("保存旅程", async () => {
+    if (accountRef.current?.user) throw new Error("账号支持请主动保存经历卡。");
     const id = sid.current; if (!id) return;
     const latest = await refresh(id); if (!latest) return;
     const currentArchives = await api.listArchives();
@@ -368,6 +369,7 @@ export function useSupportJourney(active: boolean, account?: AccountSession) {
   });
 
   const load = (archive: ArchiveInfo) => actionRun("打开存档", async () => {
+    if (accountRef.current?.user) throw new Error("账号支持不使用本机工程存档。");
     if (running.current) throw new Error("请先停止当前生成，再打开另一段旅程。");
     if (sid.current && sid.current !== archive.archive_id && stateRef.current?.session.status === "ACTIVE") throw new Error("请先结束当前旅程，再打开另一份存档。");
     let restored = true;
@@ -382,12 +384,13 @@ export function useSupportJourney(active: boolean, account?: AccountSession) {
   });
 
   const removeArchive = (archive: ArchiveInfo) => actionRun("删除磁盘存档", async () => {
+    if (accountRef.current?.user) throw new Error("账号支持不使用本机工程存档。");
     await api.deleteArchive(archive.archive_id, archive.archive_version);
     setArchives(await api.listArchives()); setNotice("磁盘存档已删除。已打开的内存旅程仍保留，可单独清空。");
   });
 
   const refreshAll = () => actionRun("刷新状态", async () => {
-    const [h, c, a] = await Promise.all([api.health(), api.catalog(), api.listArchives()]);
+    const [h, c, a] = await Promise.all([api.health(), api.catalog(), accountRef.current?.user ? Promise.resolve([]) : api.listArchives()]);
     setHealth(h); setCatalog(c); setArchives(a); await refresh(); await refreshSignals(); await refreshCards();
   }, false);
 
