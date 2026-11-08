@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight, Menu, Pause, Play, Sparkles, X } from "lucide-react";
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { ArrowUpRight, Menu, Play, Sparkles, X } from "lucide-react";
+import { motion, useInView } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import "./cinematic-home.css";
@@ -47,22 +47,16 @@ function BlurHeading({ reduced }: { reduced: boolean }) {
   </h1>;
 }
 
-export function CinematicHome({ onNavigate, mainRef, pausedByUser, onPauseChange }: {
+export function CinematicHome({ onNavigate, mainRef }: {
   onNavigate: (destination: Destination) => void;
   mainRef: RefObject<HTMLElement | null>;
-  pausedByUser: boolean;
-  onPauseChange: (paused: boolean) => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const intro = useRef<HTMLDialogElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
-  const initialReduced = useReducedMotion();
-  const [reduced, setReduced] = useState(initialReduced);
-  const [enabled, setEnabled] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [reduced, setReduced] = useState<boolean | null>(null);
+  const enabled = reduced === false;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [introOpen, setIntroOpen] = useState(false);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -71,29 +65,25 @@ export function CinematicHome({ onNavigate, mainRef, pausedByUser, onPauseChange
     preference.addEventListener("change", update);
     return () => preference.removeEventListener("change", update);
   }, []);
-  useEffect(() => { setEnabled(reduced === false); }, [reduced]);
   useEffect(() => {
     const media = video.current;
     if (!media) return;
-    let cancelled = false;
-    function synchronize() {
-      if (!media) return;
-      if (!enabled || pausedByUser || introOpen || document.hidden) {
+    const synchronize = () => {
+      if (!enabled || document.hidden) {
         media.pause();
       } else {
         void media.play().catch(() => {
-          if (!cancelled) setPlaying(false);
+          // Keep the poster if the browser blocks autoplay.
         });
       }
-    }
+    };
     synchronize();
     document.addEventListener("visibilitychange", synchronize);
     return () => {
-      cancelled = true;
       document.removeEventListener("visibilitychange", synchronize);
       media.pause();
     };
-  }, [enabled, pausedByUser, introOpen]);
+  }, [enabled]);
 
   function navigate(destination: Destination) {
     setMenuOpen(false);
@@ -101,20 +91,8 @@ export function CinematicHome({ onNavigate, mainRef, pausedByUser, onPauseChange
     onNavigate(destination);
   }
 
-  function toggleVideo() {
-    if (playing) {
-      onPauseChange(true);
-    } else {
-      setEnabled(true);
-      onPauseChange(false);
-      if (failed) { setFailed(false); video.current?.load(); }
-      void video.current?.play().catch(() => setPlaying(false));
-    }
-  }
-
   function showIntro() {
     setMenuOpen(false);
-    setIntroOpen(true);
     intro.current?.showModal();
   }
 
@@ -131,10 +109,8 @@ export function CinematicHome({ onNavigate, mainRef, pausedByUser, onPauseChange
     }}>跳到主要内容</a>
     <div className="cinema-media" aria-hidden="true">
       <video ref={video} className="cinema-video" src={enabled ? cinematicVideo : undefined}
-        autoPlay={enabled && !pausedByUser && !introOpen} loop muted playsInline
-        preload={enabled ? "auto" : "none"} poster="/images/hero_bg.jpeg"
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
-        onError={() => { setFailed(true); setPlaying(false); }} />
+        autoPlay={enabled} loop muted playsInline
+        preload={enabled ? "auto" : "none"} poster="/images/hero_bg.jpeg" />
       <div className="cinema-overlay" />
       <div className="cinema-readability" />
     </div>
@@ -189,15 +165,11 @@ export function CinematicHome({ onNavigate, mainRef, pausedByUser, onPauseChange
         </motion.div>
         <div className="cinema-edge">
           <button type="button" className="cinema-demo-note" onClick={showIntro}>本地演示 · 感受由你命名</button>
-          <button type="button" className="liquid-glass cinema-playback" onClick={toggleVideo} aria-label={playing ? "暂停背景视频" : "播放背景视频"}>
-            {playing ? <Pause size={12} /> : <Play size={12} />}
-            <span>{playing ? "暂停动态" : failed ? "重试视频" : "播放动态"}</span>
-          </button>
         </div>
       </footer>
     </div>
 
-    <dialog ref={intro} className="cinema-intro" onClose={() => setIntroOpen(false)}
+    <dialog ref={intro} className="cinema-intro"
       aria-labelledby="intro-title" onClick={(event) => { if (event.target === event.currentTarget) intro.current?.close(); }}>
       <div className="cinema-intro-inner">
         <button type="button" className="cinema-close" aria-label="关闭拾光介绍" onClick={() => intro.current?.close()}><X size={20} /></button>

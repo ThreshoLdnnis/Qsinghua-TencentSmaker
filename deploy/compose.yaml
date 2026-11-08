@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    env_file: .env.server
+    environment:
+      PRODUCT_DATA_DIR: /data
+      PRODUCT_COOKIE_SECURE: "true"
+      PRODUCT_ORIGIN: https://${PUBLIC_DOMAIN:-qsinghua.lingozm.cn}
+      LLM_MAX_TOKENS: "1800"
+    volumes:
+      - product-data:/data
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    environment:
+      LOVESTONE_PRODUCT_API_URL: https://${PUBLIC_DOMAIN:-qsinghua.lingozm.cn}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  edge:
+    image: caddy:2
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-qsinghua.lingozm.cn}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+volumes:
+  product-data:
+  caddy-data:
+  caddy-config:

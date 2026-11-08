@@ -30,25 +30,3 @@
 .world-media[data-shift="true"] :is(.world-media-poster, .world-media-video) {
   transform: translateY(17%);
 }
-
-.world-media-toggle {
-  position: absolute;
-  z-index: 2;
-  right: max(1rem, env(safe-area-inset-right));
-  bottom: max(1rem, env(safe-area-inset-bottom));
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgb(255 255 255 / 45%);
-  border-radius: 50%;
-  color: white;
-  background: rgb(12 13 16 / 62%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.world-media-toggle:hover { background: rgb(12 13 16 / 85%); }
-.world-media-toggle:focus-visible { outline: 2px solid white; outline-offset: 3px; }

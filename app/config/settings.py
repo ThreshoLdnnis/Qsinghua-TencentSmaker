@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=800, ge=1, le=4096)
     llm_thinking: Literal["enabled", "disabled"] = "disabled"
 
+    psychology_enabled: bool = False
+    psychology_demo_mode: bool = False
+    psychology_require_understanding: bool = False
+    product_data_dir: Path = PROJECT_ROOT / "data/product"
+    product_origin: str = "http://localhost:3000"
+    product_cookie_secure: bool = True
+    psychology_demo_route: Literal['routine_support', 'clarify_safety', 'safety_support', 'urgent_real_world_help'] = 'routine_support'
+    analysis_timezone: str = "Asia/Shanghai"
+
     runtime_max_steps: int = Field(default=8, ge=1, le=100)
     runtime_max_context_chars: int = Field(default=48000, ge=1)
     runtime_max_requests_per_session: int = Field(default=500, ge=1, le=10000)

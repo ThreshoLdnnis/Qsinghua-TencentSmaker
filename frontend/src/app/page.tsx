@@ -1,7 +1,7 @@
 import { connection } from "next/server";
-import { LoveStone } from "@/components/lovestone";
+import { AccountShell } from "@/components/account-shell";
 
 export default async function Page() {
   await connection();
-  return <LoveStone liveEnabled={Boolean(process.env.LOVESTONE_AGENT_API_URL)} />;
+  return <AccountShell liveEnabled={Boolean(process.env.LOVESTONE_PRODUCT_API_URL)} />;
 }
