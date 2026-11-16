@@ -328,11 +328,22 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
 
   function selectSupport(choice: SupportChoice) {
     if (!draft || (!confirmed && liveEnabled) || safety) return;
+    let supportDraft = draft;
+    if (!liveEnabled && draft.status === "proposed") {
+      try {
+        supportDraft = reviseReflection(draft, fields ?? draft.hypotheses);
+        setDraft(supportDraft);
+        setFields(supportDraft.hypotheses);
+      } catch (issue) {
+        setError(issue instanceof Error ? issue.message : "当前理解未能继续。请打开编辑入口检查。");
+        return;
+      }
+    }
     setOutcome(liveEnabled ? {
       choice, reflectionId: draft.id, reflectionRevision: draft.revision,
       response: `你选择了「${supportChoices[choice].label}」。用自己的话，为这段经历留一点记录。`,
       action: "",
-    } : chooseSupport(draft, choice));
+    } : chooseSupport(supportDraft, choice));
     setSaved(false);
   }
 
