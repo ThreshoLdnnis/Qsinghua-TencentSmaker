@@ -17,6 +17,7 @@ import { CaseForgeView } from "./support-views";
 import { CinematicCanvas, CinematicArchive } from "./cinematic-reflections";
 import { CinematicSignals } from "./cinematic-signals";
 import { WorldMedia } from "./world-media";
+import { CompanionPortal, companionProfiles, type CompanionProfile } from "./companion-world";
 import { useSupportJourney } from "./use-support-journey";
 import { projectReflection } from "../lib/support-presentation";
 import type { MemoryReference, SupportResponse } from "../lib/support-types";
@@ -27,7 +28,7 @@ import "./agent-connection.css";
 
 const nav = [
   { id: "universe", label: "心象宇宙", icon: Orbit },
-  { id: "agent", label: "拾光对话", icon: MessageCircle },
+  { id: "agent", label: "旅伴对话", icon: MessageCircle },
   { id: "canvas", label: "心象画布", icon: Layers3 },
   { id: "signals", label: "身心状态", icon: Activity },
   { id: "archive", label: "成长档案", icon: BookOpen },
@@ -90,6 +91,9 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const [remember, setRemember] = useState(false);
   const saveOperation = useRef<{ fingerprint: string; id: string } | null>(null);
   const [privacy, setPrivacy] = useState(false);
+  const [companionId, setCompanionId] = useState(companionProfiles[0].id);
+  const companion = companionProfiles.find((profile) => profile.id === companionId) ?? companionProfiles[0];
+  const [companionInvited, setCompanionInvited] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const focusDestination = useRef(false);
@@ -277,7 +281,26 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const dirty = !!draft && !!fields && hypothesisKeys.some((key) => draft.hypotheses[key] !== fields[key]);
   const confirmed = !!draft && draft.status !== "proposed" && !dirty && (!liveEnabled || (backend && !!linkedUnderstanding && linkedUnderstanding.understanding.status === "confirmed" && currentRevision));
   const sceneKey = confirmed && outcome ? outcome.choice : confirmed ? "confirmed" : draft ? "proposed" : "idle";
-  const currentScene = scene[sceneKey];
+  const currentScene = {
+    ...scene[sceneKey],
+    title: `${companion.name} · ${scene[sceneKey].title.split(" · ").slice(1).join(" · ")}`,
+    text: `${companion.descriptor}。${scene[sceneKey].text.replaceAll("拾光", companion.name)}`,
+  };
+
+  function selectCompanion(profile: CompanionProfile) {
+    setCompanionId(profile.id);
+    setCompanionInvited(false);
+  }
+
+  function inviteCompanion(profile: CompanionProfile) {
+    setCompanionId(profile.id);
+    setCompanionInvited(true);
+    setInput((current) => {
+      const isCompanionOpening = companionProfiles.some((candidate) => candidate.opening === current);
+      return !current.trim() || isCompanionOpening ? profile.opening : current;
+    });
+    requestAnimationFrame(() => inputField.current?.focus());
+  }
 
   async function confirm() {
     if (!draft || !fields || pending || !currentRevision || (backend && journey.state?.session.status !== "ACTIVE")) return;
@@ -373,9 +396,9 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
       <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); main.current?.focus(); }}>跳到主要内容</a>
       <header className="site-header" data-scrolled={scrolled}>
         <div className="header-inner">
-          <button type="button" className="brand" aria-label="LoveStone 首页" onClick={() => go("universe")}>
+          <button type="button" className="brand" aria-label="翎语首页" onClick={() => go("universe")}>
             <span className="brand-mark"><Image src="/mark.svg" width={33} height={33} alt="" priority /></span>
-            <span>Love<span>Stone</span></span>
+            <span>翎语</span>
           </button>
           <nav id="world-navigation" aria-label="主导航" className="nav-glass" data-open={menuOpen}>
             {nav.map(({ id, label, icon: Icon }) => (
@@ -411,9 +434,11 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
               <WorldMedia src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4" poster="/images/agent-bg.jpg" shift />
               <div className="agent-intro-shade" aria-hidden="true" />
               <div className="agent-intro-content">
-                <span className="agent-intro-kicker">LOVESTONE / PERSONAL AGENT</span>
-                <h1 id="agent-title" lang="en">A space to be heard.</h1>
-                <p className="agent-intro-subtitle">和拾光说说话。<span>不必先整理好自己。</span></p>
+                <span className="agent-intro-kicker">翎语 / COMPANION ARRIVAL</span>
+                <h1 id="agent-title" lang="en">A friend from another world.</h1>
+                <p className="agent-intro-subtitle">和{companion.name}说说话。<span>不必先整理好自己。</span></p>
+                <CompanionPortal selected={companion} onSelect={selectCompanion} onInvite={inviteCompanion} />
+                {companionInvited && <p className="companion-invite-status" role="status">{companion.name} 已在你的空间里等着。把开场句改成你自己的话，再决定什么时候发送。</p>}
                 {productEnabled && <div className="input-meta">
                   <strong>{liveEnabled ? "账号支持" : "独立本地演示"}</strong>
                   <button type="button" className="text-button" disabled={pending} onClick={switchMode}>{liveEnabled ? "切换到本地演示" : "切换到账号支持"}</button>
@@ -434,12 +459,12 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                     onChange={(event) => { setUseMemories(event.target.checked); setConsent(false); }} /><span>这次回应使用我已允许未来使用的经历卡记忆。关闭后继续发送会清除本次对话上下文。</span></label>}
                   {liveEnabled && <label className="consent-box"><input type="checkbox" checked={consent} disabled={pending || !authenticated} onChange={(e) => setConsent(e.target.checked)} /><span>{fixture ? "使用这次虚构输入与当前旅程，生成模拟回应。" : `同意将本次内容、当前会话${useMemories ? "和我已允许的经历卡记忆" : ""}发送给模型，生成这次回应。设备用途另行选择。`}</span></label>}
                   <p className="agent-data-note"><LockKeyhole size={12} /> {!liveEnabled ? "本地模拟理解 · 请仅输入虚构内容 · 刷新即清除" : !authenticated ? "登录后使用账号支持" : !connectionReady ? "正在连接支持服务" : fixture ? "模拟回应 · 无真实设备连接 · 仅使用虚构内容" : "理解由你核对 · 回应未经专业审核"}</p>
-                  {pending && <p className="inline-status" role="status">拾光正在准备回应…</p>}
+                  {pending && <p className="inline-status" role="status">{companion.name}正在准备回应…</p>}
                   {visibleError && <p className="inline-status" role="alert">{visibleError}</p>}
                   {liveEnabled && authenticated && !connectionReady && <button type="button" className="text-button" disabled={pending} onClick={() => void journey.refreshAll()}>重新连接</button>}
                   {backend && journey.failedAttempt && !pending && <div className="input-meta"><button type="button" className="text-button" disabled={!consent || !!journey.lastAttempt?.use_memories !== useMemories} onClick={() => void retry(true)}>重取本次结果</button><button type="button" className="text-button" disabled={!consent} onClick={() => void retry(false)}>重新尝试</button></div>}
                 </form>
-                {backend && journey.response && !draft && <div className="reply"><span><Aperture size={17} />拾光 · 当前回应</span><p>{journey.response.reply}</p></div>}
+                {backend && journey.response && !draft && <div className="reply"><span><Aperture size={17} />{companion.name} · 当前回应</span><p>{journey.response.reply}</p></div>}
                 {backend && (draft || journey.response) && <details className="agent-history">
                   <summary>本轮提供给模型的经历卡（{memoryReferences.length}）</summary>
                   {memoryReferences.length ? memoryReferences.map((reference) => {
@@ -447,9 +472,9 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                     return <p key={reference.card_id}><strong>{reference.title || (card ? card.fields.facts.slice(0, 60) || "已确认经历卡" : reference.card_id)}</strong> · 版本 {reference.revision}</p>;
                   }) : <p>本轮没有提供经历卡记忆。</p>}
                 </details>}
-                {backend && !!journey.state?.session.messages.length && <details className="agent-history"><summary>查看本次旅程对话</summary>{journey.state.session.messages.map((message, index) => <p key={index}><strong>{message.role === "user" ? "你" : "拾光"}：</strong>{message.content}</p>)}</details>}
+                {backend && !!journey.state?.session.messages.length && <details className="agent-history"><summary>查看本次旅程对话</summary>{journey.state.session.messages.map((message, index) => <p key={index}><strong>{message.role === "user" ? "你" : companion.name}：</strong>{message.content}</p>)}</details>}
                 {liveEnabled && <details className="agent-support-access" open={safety || undefined}><summary><HeartHandshake size={14} />现实支持入口</summary><p>{journey.support.message}</p><ul>{journey.support.actions.map((action) => <li key={action}>{action}</li>)}</ul><small>随时可用，无需先确认画布；不会自动联系他人。</small></details>}
-                <p className="agent-intro-promise">拾光会把听见的轻轻放在你面前。<br />哪些理解贴近你，怎样继续，都由你决定。</p>
+                <p className="agent-intro-promise">{companion.name}会把听见的轻轻放在你面前。<br />哪些理解贴近你，怎样继续，都由你决定。</p>
                 <button type="button" className="agent-manifesto" onClick={draft ? scrollToDraft : () => setPrivacy(true)}>{draft ? "继续整理这段经历" : "关于这个空间"} <ArrowRight size={14} /></button>
               </div>
               <div className="agent-orbit-actions" aria-label="继续探索">
@@ -462,8 +487,8 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
               <div className="agent-main">
                 {draft && fields && <>
                   <section className="flow-panel reflection-panel" aria-labelledby="draft-title">
-                    <div className="panel-head"><span className="step-index">02</span><div><h2 id="draft-title" tabIndex={-1} ref={confirmRef}>看看拾光听见了什么</h2><p>包括「事实」在内，都可以重写、留空或确认。</p></div></div>
-                    <div className="reply"><span><Aperture size={17} /> 拾光 · {fixture ? "模拟回应" : draft.source === "fastapi" ? "对话回应，未经专业审核" : "演示回复，未经你确认"}</span><p>{draft.reply}</p></div>
+                    <div className="panel-head"><span className="step-index">02</span><div><h2 id="draft-title" tabIndex={-1} ref={confirmRef}>看看{companion.name}听见了什么</h2><p>包括「事实」在内，都可以重写、留空或确认。</p></div></div>
+                    <div className="reply"><span><Aperture size={17} /> {companion.name} · {fixture ? "模拟回应" : draft.source === "fastapi" ? "对话回应，未经专业审核" : "演示回复，未经你确认"}</span><p>{draft.reply}</p></div>
                     <div className="draft-note"><Pencil size={14} /> {liveEnabled ? "这是拾光的待确认理解。包括事实在内，每一栏都可以纠正或留空。" : "模拟理解 · 可修改的假设 · 非诊断"}</div>
                     {backend && !currentRevision && <p role="status">这份理解的来源或版本已变化。<button type="button" className="text-button" disabled={pending} onClick={reloadUnderstanding}>载入当前版本重新核对</button></p>}
                     <div className="field-grid">
@@ -474,12 +499,12 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                     </div>
                     <div className="flow-actions">
                       <button type="button" className="btn btn-secondary" disabled={pending || confirmed || !currentRevision || (backend && journey.state?.session.status !== "ACTIVE")} onClick={() => void confirm()}><Check size={16} /> {confirmed ? "理解已确认" : "确认当前理解"}</button>
-                      <small aria-live="polite">{dirty ? "有未确认的修改" : confirmed ? "拾光会用你确认的版本来回应" : "确认后可选择怎样被支持"}</small>
+                      <small aria-live="polite">{dirty ? "有未确认的修改" : confirmed ? `${companion.name}会用你确认的版本来回应` : "确认后可选择怎样被支持"}</small>
                     </div>
                   </section>
 
                   {confirmed && !safety && <section className="flow-panel support-panel" aria-labelledby="support-title">
-                    <div className="panel-head"><span className="step-index">03</span><div><h2 id="support-title">此刻，希望怎么继续？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : "你选的方式会改变拾光的回应，以及静水湾接下来的样子。"}</p></div></div>
+                    <div className="panel-head"><span className="step-index">03</span><div><h2 id="support-title">此刻，希望怎么继续？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : `你选的方式会改变${companion.name}的回应，以及${companion.planet}接下来的样子。`}</p></div></div>
                     <div className="support-grid" aria-label="支持选择">
                       {choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={outcome?.choice === choice} onClick={() => selectSupport(choice)} disabled={pending}>
                         <Icon size={18} aria-hidden="true" /><strong>{supportChoices[choice].label}</strong><small>{supportChoices[choice].description}</small>
@@ -506,14 +531,14 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                   </section>}
                 </>}
               </div>
-              <aside className="agent-side" aria-label="拾光与静水湾">
+              <aside className="agent-side" aria-label={`${companion.name}与${companion.planet}`}>
                 <div className="side-art" data-scene={sceneKey}>
                   <Image src="/quiet-cove.webp" alt="" fill sizes="(max-width: 830px) 100vw, 335px" />
                   <SceneWave state={sceneKey} />
                   <div className="side-art-content"><span><span className="live-dot" /> {currentScene.tag}</span><h2>{currentScene.title}</h2><p aria-live="polite">{currentScene.text}</p></div>
                 </div>
-                <div className="side-note"><HeartHandshake size={19} /><div><strong>这一步，由你决定。</strong><p>拾光的回应仅供自我反思。你可以修改任何理解，也可以停在这里。</p></div></div>
-                <button type="button" className="text-button back-to-cove" onClick={() => go("universe")}><ArrowLeft size={15} /> 回到静水湾</button>
+                <div className="side-note"><HeartHandshake size={19} /><div><strong>这一步，由你决定。</strong><p>{companion.name}的回应仅供自我反思。你可以修改任何理解，也可以停在这里。</p></div></div>
+                <button type="button" className="text-button back-to-cove" onClick={() => go("universe")}><ArrowLeft size={15} /> 回到心象宇宙</button>
               </aside>
             </div>}
           </section>}
@@ -545,7 +570,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
         </div>
       </main>
       <footer className="site-footer"><div className="footer-inner">
-        <span><Focus size={15} /> LoveStone <span className="footer-divider" /> 感受由你命名</span>
+        <span><Focus size={15} /> 翎语 <span className="footer-divider" /> 感受由你命名</span>
         <button type="button" className="text-button" onClick={() => go(view === "caseforge" ? "universe" : "caseforge")}>
           <FlaskConical size={14} /> {view === "caseforge" ? "返回心象宇宙" : "CaseForge · 内部研发"} <ChevronRight size={14} />
         </button>

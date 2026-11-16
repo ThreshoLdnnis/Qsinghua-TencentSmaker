@@ -100,11 +100,10 @@
 .cinema-journey { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .cinema-journey-label { padding: 5px 14px; font-size: 11px; color: white; font-weight: 500; text-shadow: 0 1px 12px #112c3470; }
 .cinema-journey-links { display: flex; justify-content: center; align-items: start; gap: clamp(30px,5vw,72px); }
-.cinema-journey-links > button { display: grid; gap: 0; text-align: center; color: white; min-width: 64px; transition: transform .25s; text-shadow: 0 2px 12px #263f4590; }
-.cinema-journey-links > button > span { font: italic 400 32px/1.25 var(--heading-font); letter-spacing: -.6px; }
+.cinema-journey-links > span { display: grid; gap: 0; text-align: center; color: white; min-width: 64px; text-shadow: 0 2px 12px #263f4590; }
+.cinema-journey-links > span > span { font: italic 400 32px/1.25 var(--heading-font); letter-spacing: -.6px; }
 .cinema-journey-links small { opacity: .76; font-size: 9px; letter-spacing: .12em; transition: opacity .25s; }
-.cinema-journey-links > button:hover { transform: translateY(-3px); }
-.cinema-journey-links > button:hover small { opacity: 1; }
+.cinema-journey-links > span small { opacity: .8; }
 .cinema-edge { margin-top: 16px; }
 .cinema-demo-note { font-size: 10px; color: #fffe; letter-spacing: .08em; text-shadow: 0 1px 12px #203c4699; }
 .cinema-intro { position: fixed; padding: 0; margin: auto; width: min(520px,calc(100vw - 32px)); max-height: calc(100svh - 40px); overflow: auto; border: 1px solid #e8caff45; border-radius: 24px; color: #fff1f7; background: #21192b; color-scheme: dark; }
@@ -158,15 +157,15 @@
   .cinema-loop > p { font-size: 10px; text-align: center; }
   .cinema-journey { gap: 15px; }
   .cinema-journey-links { width: 100%; max-width: 530px; justify-content: space-between; gap: 8px; }
-  .cinema-journey-links > button { min-width: 46px; }
-  .cinema-journey-links > button > span { font-size: 27px; }
+  .cinema-journey-links > span { min-width: 46px; }
+  .cinema-journey-links > span > span { font-size: 27px; }
   .cinema-journey-label { font-size: 10px; }
   .cinema-edge { margin-top: 24px; }
 }
 @media (max-width: 410px) {
   .cinema-title { font-size: clamp(43px,13vw,52px); line-height: .94; }
   .cinema-center { padding-inline: 17px; }
-  .cinema-journey-links > button > span { font-size: 25px; }
+  .cinema-journey-links > span > span { font-size: 25px; }
   .cinema-journey-links small { font-size: 8px; }
 }
 @media (max-height: 650px) and (min-width: 761px) {

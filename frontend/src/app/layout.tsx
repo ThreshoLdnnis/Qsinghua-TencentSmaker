@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LoveStone · 心象宇宙",
-  description: "在心象宇宙里，和拾光一起整理感受，留下一点属于自己的光。",
+  title: "翎语 · 心象宇宙",
+  description: "来自未知星球的陪伴，在心象宇宙里和你一起整理感受。",
   icons: { icon: "/mark.svg" },
 };
 

@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import {
   Activity, ArrowDownRight, ArrowRight, AudioLines, BookOpen, Check, CircleHelp,
   CloudMoon, Fingerprint, FlaskConical, Footprints, Heart, Layers3,
-  Orbit, Pause, Play, ScanLine, Sparkles, Wind, X,
+  Orbit, ScanLine, Sparkles, Wind, X,
 } from "lucide-react";
 import {
   hypothesisKeys, supportChoices,
@@ -37,7 +37,6 @@ function SectionHead({ icon, eyebrow, title, description, badge }: {
 
 export function MindCanvasView({ draft, onOpenAgent }: { draft: Reflection | null; onOpenAgent: () => void }) {
   const [active, setActive] = useState<HypothesisKey>("facts");
-  const [paused, setPaused] = useState(false);
   const layer = layers[active];
   const Icon = layer.icon;
 
@@ -47,7 +46,7 @@ export function MindCanvasView({ draft, onOpenAgent }: { draft: Reflection | nul
       <div className="lsv-canvas-layout">
         <div className="lsv-panel lsv-atlas">
           <div className="lsv-panel-kicker"><span>01 / REFLECTION MAP</span><span>演示画布</span></div>
-          <div className="lsv-map" data-paused={paused}>
+          <div className="lsv-map">
             <div className="lsv-map-orbits" aria-hidden="true"><i /><i /><i /><b /></div>
             <div className="lsv-map-core" aria-hidden="true" data-tint={layer.tint}><Icon key={active} className="lsv-layer-enter" /></div>
             <div className="lsv-map-nodes" role="group" aria-label="理解层">
@@ -63,10 +62,7 @@ export function MindCanvasView({ draft, onOpenAgent }: { draft: Reflection | nul
             </div>
           </div>
           <div className="lsv-map-footer">
-            <p className="lsv-map-caption">选择一层，看看它在这段经历里的位置。</p>
-            <button type="button" className="lsv-motion-toggle" onClick={() => setPaused((value) => !value)}>
-              {paused ? <Play size={13} /> : <Pause size={13} />}{paused ? "播放轨道" : "暂停轨道"}
-            </button>
+            <p className="lsv-map-caption">选择一层，看看它在这段经历里的位置。轨道会持续流动。</p>
           </div>
         </div>
         <article className="lsv-panel lsv-layer-detail" data-tint={layer.tint}>

@@ -29,7 +29,31 @@
 .world-canvas .mode-badge i { background: #364c46; }
 .world-signals .nav-glass, .world-archive .nav-glass { background: transparent; border-color: transparent; backdrop-filter: none; box-shadow: none; }
 
-.world-agent .agent-view { background: #000; }
+.world-agent .agent-view {
+  background:
+    radial-gradient(70% 46% at 50% 2%, rgb(138 69 116 / 32%), transparent 70%),
+    #140f16;
+}
+.world-agent .agent-intro-screen { background: #14110e; }
+.world-agent .agent-intro-screen::after {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none; content: "";
+  background:
+    radial-gradient(circle at 16% 20%, rgb(255 201 219 / 18%) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 16%, rgb(255 225 195 / 28%) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 10%, rgb(255 193 218 / 18%), transparent 42%),
+    linear-gradient(180deg, rgb(80 41 73 / 30%), transparent 45%, rgb(7 5 9 / 70%));
+  background-size: 170px 170px, 240px 240px, auto, auto;
+  mix-blend-mode: screen;
+}
+.world-agent .agent-intro-shade {
+  z-index: 2;
+  background: linear-gradient(180deg, rgb(20 12 26 / 28%) 0%, rgb(20 12 26 / 12%) 38%, rgb(20 12 26 / 76%) 100%);
+}
+.world-agent .world-media { opacity: .31; mix-blend-mode: screen; filter: saturate(.8) sepia(.2); }
+.world-agent .agent-intro-content { z-index: 4; }
+.world-agent .agent-intro-kicker { color: #ffc6d8; letter-spacing: .18em; }
+.world-agent .agent-intro-subtitle { color: #f4dfdf; }
+.companion-invite-status { max-width: 560px; margin: -10px auto 14px; color: #ffd4de; font-size: 10px; line-height: 1.7; }
 .agent-intro-screen { position: relative; isolation: isolate; min-height: max(680px,100svh); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 132px 24px 130px; overflow: hidden; }
 .agent-intro-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg,#0002 0%,transparent 45%,#0003 80%,#0009); }
 .agent-intro-content { position: relative; width: min(100%,650px); z-index: 3; text-align: center; }

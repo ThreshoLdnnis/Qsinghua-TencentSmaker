@@ -326,7 +326,7 @@ export function CinematicSignals({ onOpenAgent, journey }: { onOpenAgent: () => 
           <h2 className="signals-display" id="signals-join-title">Pause.<br />Check in with yourself.</h2>
           <p className="signals-muted">如果某一天的变化让你想起一件事，可以把感受写进对话。拾光会从你愿意分享的文字开始。</p>
           <div className="signals-actions">
-            <button className="signals-button signals-glass" type="button" onClick={onOpenAgent}>和拾光聊聊 <ArrowUpRight size={16} aria-hidden="true" /></button>
+            <button className="signals-button signals-glass" type="button" onClick={onOpenAgent}>和旅伴聊聊 <ArrowUpRight size={16} aria-hidden="true" /></button>
             <button className="signals-button signals-outline" type="button" onClick={() => moveTo(chartTitle.current)}>{journey ? "再看个人趋势" : "再看模拟趋势"}</button>
           </div>
         </Reveal>
@@ -342,7 +342,7 @@ export function CinematicSignals({ onOpenAgent, journey }: { onOpenAgent: () => 
           </div>
           <div className="signals-footer-reflect"><p>用自己的话，给这一天留一点记录。</p><button className="signals-button signals-glass" type="button" onClick={onOpenAgent}>开始对话 <ArrowUpRight size={15} aria-hidden="true" /></button></div>
         </div>
-        <div className="signals-footer-base"><span>LoveStone</span><p>{journey ? "无真实设备连接 · 记录不用于诊断 · 只有单独允许的设备观察才用于对话" : "模拟数据 · 无设备连接 · 不用于诊断，也不会作为对话输入"}</p></div>
+        <div className="signals-footer-base"><span>翎语</span><p>{journey ? "无真实设备连接 · 记录不用于诊断 · 只有单独允许的设备观察才用于对话" : "模拟数据 · 无设备连接 · 不用于诊断，也不会作为对话输入"}</p></div>
       </footer>
     </div>
   );

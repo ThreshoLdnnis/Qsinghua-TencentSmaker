@@ -12,8 +12,7 @@ export const cinematicVideo = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZbo
 type Destination = "universe" | "agent" | "canvas" | "signals" | "archive" | "caseforge";
 const links = [
   { id: "universe", label: "心象宇宙" },
-  { id: "agent", label: "拾光对话" },
-  { id: "canvas", label: "心象画布" },
+  { id: "agent", label: "旅伴对话" },
   { id: "signals", label: "身心状态" },
   { id: "archive", label: "成长档案" },
 ] as const;
@@ -26,13 +25,13 @@ const journeys = [
 ] as const;
 const loopSteps = [
   { index: "01", title: "Listen", label: "表达", body: "从一件具体的小事开始，不必先把自己说清楚。", destination: "agent" as const },
-  { index: "02", title: "Reflect", label: "改写", body: "拾光把理解拆成事实、解释、情绪、需要，你可以逐栏改写。", destination: "canvas" as const },
+  { index: "02", title: "Reflect", label: "改写", body: "旅伴把理解拆成事实、解释、情绪、需要，你可以逐栏改写。", destination: "canvas" as const },
   { index: "03", title: "Choose", label: "选择", body: "Keep、Release、Next 由你决定；任何理解都不是诊断。", destination: "agent" as const },
   { index: "04", title: "Grow", label: "带走", body: "只有你主动保存的经历卡，才会在未来对话中被再次参考。", destination: "archive" as const },
 ] as const;
 const loopPreview = [
   { eyebrow: "你的一句话", title: "先从一件小事开始", chips: ["我准备好的想法没说完", "会议已经结束"], action: "Listen · 表达", helper: "把感受交给拾光，不必先整理好自己。" },
-  { eyebrow: "拾光的待确认理解", title: "四层画布，逐栏可改", chips: ["事实  发生了什么", "解释  可能意味着什么", "情绪  此刻的感受", "需要  想要怎样的支持"], action: "Reflect · 理解", helper: "AI 只提出假设；每一栏都由你确认、留空或改写。" },
+  { eyebrow: "旅伴的待确认理解", title: "四层画布，逐栏可改", chips: ["事实  发生了什么", "解释  可能意味着什么", "情绪  此刻的感受", "需要  想要怎样的支持"], action: "Reflect · 理解", helper: "AI 只提出假设；每一栏都由你确认、留空或改写。" },
   { eyebrow: "你的选择", title: "把下一步交还给自己", chips: ["Keep · 留下", "Release · 放下", "Next · 向前"], action: "Choose · 选择", helper: "不是完成任务，而是选择此刻愿意带走的方向。" },
   { eyebrow: "一张属于你的经历卡", title: "只保存你主动留下的部分", chips: ["已确认的四字段", "Keep / Next 文字", "未来参考：由你开启"], action: "Grow · 带走", helper: "下一次对话只有在你允许时，才会参考这张卡片。" },
 ] as const;
@@ -134,9 +133,9 @@ export function CinematicHome({ onNavigate, mainRef }: {
     </div>
 
     <header className="cinema-nav">
-      <button type="button" className="cinema-brand" aria-label="LoveStone 首页" onClick={() => navigate("universe")}>
+      <button type="button" className="cinema-brand" aria-label="翎语首页" onClick={() => navigate("universe")}>
         <Image src="/mark.svg" alt="" width={48} height={48} priority />
-        <span>LoveStone</span>
+        <span>翎语</span>
       </button>
       <nav className="liquid-glass cinema-desktop-nav" aria-label="主导航">
         {links.map(({ id, label }) => <button type="button" key={id} aria-current={id === "universe" ? "page" : undefined}
@@ -156,14 +155,14 @@ export function CinematicHome({ onNavigate, mainRef }: {
     <div className="cinema-foreground">
       <main id="main-content" ref={mainRef} tabIndex={-1} className="cinema-center" aria-labelledby="cinema-title">
         <motion.div className="liquid-glass cinema-badge" {...reveal(.05)}>
-          <span>New</span><span>LoveStone · 你的心象宇宙，从此刻开启</span>
+          <span>翎语</span><span>来自未知星球的朋友，从此刻降临</span>
         </motion.div>
         <BlurHeading reduced={!!reduced} />
         <motion.p className="cinema-description" {...reveal(.8)}>
           给感受一点空间，向内探索一整个宇宙。<br />
-          与拾光一起，理解此刻的自己，找到属于你的下一步。
+          和来自未知星球的朋友一起，理解此刻的自己，找到属于你的下一步。
         </motion.p>
-        <motion.div className="cinema-value-bar" {...reveal(.95)} aria-label="LoveStone核心机制">
+        <motion.div className="cinema-value-bar" {...reveal(.95)} aria-label="翎语核心机制">
           <span>THE LOOP</span><strong>表达 → 理解 → 纠正 → 带走</strong><small>AI 提出假设，你决定什么被记住。</small>
         </motion.div>
         <motion.div className="cinema-actions" {...reveal(1.1)}>
@@ -171,12 +170,12 @@ export function CinematicHome({ onNavigate, mainRef }: {
             whileHover={reduced ? undefined : { y: -3, scale: 1.025 }}
             whileTap={reduced ? undefined : { scale: .97 }}
             onClick={() => navigate("agent")}>开启心象旅程 <ArrowUpRight size={20} /></motion.button>
-          <button type="button" className="cinema-secondary" onClick={showIntro}>认识拾光 <Play size={14} fill="currentColor" /></button>
+          <button type="button" className="cinema-secondary" onClick={showIntro}>认识旅伴 <Play size={14} fill="currentColor" /></button>
         </motion.div>
       </main>
 
       <footer className="cinema-bottom">
-        <motion.section className="cinema-loop" {...reveal(1.25)} aria-label="LoveStone核心闭环">
+        <motion.section className="cinema-loop" {...reveal(1.25)} aria-label="翎语核心闭环">
           <div className="cinema-loop-head"><span>一段支持旅程，四个由你掌握的动作</span><small>0{activeLoop + 1} / 04</small></div>
           <motion.div className="cinema-loop-preview" key={loopPreview[activeLoop].action}
             initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : .28 }} aria-live="polite">
@@ -197,11 +196,11 @@ export function CinematicHome({ onNavigate, mainRef }: {
         </motion.section>
         <motion.div className="cinema-journey" {...reveal(1.35)}>
           <span className="liquid-glass cinema-journey-label">每一种感受，都有值得被看见的宇宙</span>
-          <nav className="cinema-journey-links" aria-label="探索 LoveStone">
-            {journeys.map(({ id, title, label }) => <button type="button" key={title} onClick={() => navigate(id)} aria-label={title + " · " + label}>
+          <div className="cinema-journey-links" aria-label="支持旅程的五个动作">
+            {journeys.map(({ title, label }) => <span key={title} aria-label={title + " · " + label}>
               <span lang="en">{title}</span><small>{label}</small>
-            </button>)}
-          </nav>
+            </span>)}
+          </div>
         </motion.div>
         <div className="cinema-edge">
           <button type="button" className="cinema-demo-note" onClick={showIntro}>本地演示 · 感受由你命名</button>
@@ -212,7 +211,7 @@ export function CinematicHome({ onNavigate, mainRef }: {
     <dialog ref={intro} className="cinema-intro"
       aria-labelledby="intro-title" onClick={(event) => { if (event.target === event.currentTarget) intro.current?.close(); }}>
       <div className="cinema-intro-inner">
-        <button type="button" className="cinema-close" aria-label="关闭拾光介绍" onClick={() => intro.current?.close()}><X size={20} /></button>
+        <button type="button" className="cinema-close" aria-label="关闭旅伴介绍" onClick={() => intro.current?.close()}><X size={20} /></button>
         <Image src="/quiet-cove.webp" alt="静水湾中，一颗透着暖光的晶石悬在水面上。" width={600} height={400} />
         <div className="cinema-intro-copy">
           <div className="cinema-intro-eyebrow"><Sparkles size={14} /> MEET YOUR COMPANION</div>

@@ -81,7 +81,7 @@ export function CinematicCanvas({ draft, onOpenAgent }: { draft: Reflection | nu
                   <p tabIndex={draft ? 0 : undefined} aria-label={draft ? `${hypothesisLabels[active]}理解内容` : undefined}>{draft ? draft.hypotheses[active] || "你选择了留白。" : layer.hint}</p>
                 </div>
               </div>
-              <button type="button" className="cr-button cr-canvas-button" onClick={onOpenAgent}>{draft ? "去对话确认或修正" : "和拾光聊聊"}<ArrowUpRight size={17} /></button>
+              <button type="button" className="cr-button cr-canvas-button" onClick={onOpenAgent}>{draft ? "去对话确认或修正" : "和旅伴聊聊"}<ArrowUpRight size={17} /></button>
             </article>
             <p className="cr-canvas-note">理解可以改变，也可以留白。这不是诊断。</p>
           </div>
@@ -115,7 +115,7 @@ export function CinematicArchive({ cards, onOpenAgent, journey, persisted = fals
           <p className="cr-description cr-enter cr-delay-copy">把想带走的理解存成一张经历卡。再回头时，你可以看见当时如何照顾自己、为自己选了哪一步。</p>
           <div className="cr-archive-actions cr-enter cr-delay-actions">
             <button type="button" className="cr-button cr-glass cr-archive-primary" onClick={() => showCards()}>查看我的经历卡<ArrowDown size={17} /></button>
-            <button type="button" className="cr-button cr-archive-secondary" onClick={onOpenAgent}>和拾光开启一段对话<ArrowUpRight size={17} /></button>
+            <button type="button" className="cr-button cr-archive-secondary" onClick={onOpenAgent}>和旅伴开启一段对话<ArrowUpRight size={17} /></button>
           </div>
         </div>
         <nav className="cr-archive-beacons cr-enter cr-delay-actions" aria-label="按经历选择浏览卡片">
@@ -163,7 +163,7 @@ export function CinematicArchive({ cards, onOpenAgent, journey, persisted = fals
             <Sparkles size={25} />
             <h3>{cards.length ? "这个筛选下暂时没有卡片" : "第一束光，等你留下"}</h3>
             <p>{cards.length ? "可以查看其他卡片，或回到对话留下一张新的经历卡。" : "和拾光说说近况，确认你自己的理解，选择留下、放下或向前，再保存这段经历。"}</p>
-            <button type="button" className="cr-button cr-glass" onClick={cards.length ? () => setFilter("all") : onOpenAgent}>{cards.length ? "查看全部" : "前往拾光对话"}<ArrowUpRight size={16} /></button>
+            <button type="button" className="cr-button cr-glass" onClick={cards.length ? () => setFilter("all") : onOpenAgent}>{cards.length ? "查看全部" : "前往旅伴对话"}<ArrowUpRight size={16} /></button>
           </div>
         )}
         {journey && <CinematicArchiveControls journey={journey} />}

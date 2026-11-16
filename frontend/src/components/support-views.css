@@ -172,7 +172,6 @@
 .lsv-map-orbits i:nth-child(2) { --lsv-orbit-angle: -28deg; --lsv-orbit-time: 54s; width: 74%; height: 61%; animation-direction: reverse; }
 .lsv-map-orbits i:nth-child(3) { --lsv-orbit-angle: -7deg; --lsv-orbit-time: 70s; width: 85%; height: 73%; border-style: dashed; }
 .lsv-map-orbits b { --lsv-orbit-angle: 64deg; --lsv-orbit-time: 34s; width: 46%; height: 53%; }
-.lsv-map[data-paused="true"] .lsv-map-orbits :is(i, b) { animation-play-state: paused; }
 
 .lsv-map-core {
   position: relative;
