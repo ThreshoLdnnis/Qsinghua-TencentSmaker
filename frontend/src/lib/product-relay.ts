@@ -1,5 +1,5 @@
 /** Narrow same-origin bridge to the authenticated Python product boundary. */
-const route = /^\/(?:account\/(?:me|login|register|logout)|product\/cards(?:\/[0-9a-f-]{36})?|support\/(?:health|support|wearables\/catalog|sessions(?:\/[0-9a-f-]{36}(?:\/(?:support-state|messages|end|workflow\/cancel|wearables\/(?:trends|simulate|consent)|analysis|reports(?:\/[A-Za-z0-9_-]{1,128}\/delete)?|understandings(?:\/control|\/[A-Za-z0-9_-]{1,128}(?:\/(?:confirm|reject))?)?))?)?))$/;
+const route = /^\/(?:account\/(?:me|login|register|logout)|product\/cards(?:\/[0-9a-f-]{36})?|companion\/sessions(?:\/[0-9a-f-]{36}(?:\/messages)?)?|support\/(?:health|support|wearables\/catalog|sessions(?:\/[0-9a-f-]{36}(?:\/(?:support-state|messages|end|workflow\/cancel|wearables\/(?:trends|simulate|consent)|analysis|reports(?:\/[A-Za-z0-9_-]{1,128}\/delete)?|understandings(?:\/control|\/[A-Za-z0-9_-]{1,128}(?:\/(?:confirm|reject))?)?))?)?))$/;
 const unavailable = () => Response.json({ detail: { code: "product_service_unavailable", message: "账号与真实模型服务尚未部署，仍可使用独立演示。" } }, { status: 503, headers: { "Cache-Control": "no-store" } });
 
 export async function relayProduct(request: Request, segments: string[]): Promise<Response> {

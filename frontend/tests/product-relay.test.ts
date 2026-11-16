@@ -40,6 +40,21 @@ test("product relay rejects path/query injections, unsafe origins, and a missing
   } finally { globalThis.fetch = old; delete process.env.LOVESTONE_PRODUCT_API_URL; }
 });
 
+test("product relay allows only the companion session paths", async () => {
+  const old = globalThis.fetch;
+  process.env.LOVESTONE_PRODUCT_API_URL = "http://127.0.0.1:8070";
+  globalThis.fetch = async (input) => {
+    assert.equal(String(input), "http://127.0.0.1:8070/api/companion/sessions/12345678-1234-1234-1234-123456789012/messages");
+    return Response.json({ session_id: "ok" });
+  };
+  try {
+    const allowed = await relayProduct(new Request("https://site/api/companion/sessions/12345678-1234-1234-1234-123456789012/messages", { method: "POST", body: "{}" }), ["companion", "sessions", "12345678-1234-1234-1234-123456789012", "messages"]);
+    assert.equal(allowed.status, 200);
+    const refused = await relayProduct(new Request("https://site/api/companion/sessions/12345678-1234-1234-1234-123456789012/unknown"), ["companion", "sessions", "12345678-1234-1234-1234-123456789012", "unknown"]);
+    assert.equal(refused.status, 404);
+  } finally { globalThis.fetch = old; delete process.env.LOVESTONE_PRODUCT_API_URL; }
+});
+
 test("chunked oversized credential requests fail without forwarding sensitive content", async () => {
   const old = globalThis.fetch; let calls = 0;
   globalThis.fetch = async () => { calls++; throw new Error("must not fetch"); };

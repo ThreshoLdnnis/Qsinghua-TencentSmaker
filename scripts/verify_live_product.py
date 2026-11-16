@@ -1,4 +1,4 @@
-"""Two real supplier calls with fictional input; no credentials/content in stdout.
+"""Real supplier calls with fictional input; no credentials/content in stdout.
 
 python -m scripts.verify_live_product --live
 Uses a disposable temporary account/database, never the user's saved records.
@@ -61,10 +61,22 @@ def run():
                 'request_id': str(uuid4()), 'model_consent': True, 'use_memories': True}))
             if not any(item['card_id'] == card['card_id'] for item in again['memory_refs']):
                 raise RuntimeError('probe_failed:recall_missing')
+            companion_sid = success(client.post('/api/companion/sessions', headers=headers, json={}), 201)['session_id']
+            companion_body = {
+                'content': '这是旅伴联调里的第一句虚构消息：请告诉我你来自哪里。',
+                'request_id': str(uuid4()), 'model_consent': True, 'companion_id': 'shiguang', 'use_memories': True,
+            }
+            first_companion = success(client.post(f'/api/companion/sessions/{companion_sid}/messages', headers=headers, json=companion_body))
+            second_companion = success(client.post(f'/api/companion/sessions/{companion_sid}/messages', headers=headers, json={
+                **companion_body, 'content': '记住刚才的介绍，再讲一小段你学校里的故事。', 'request_id': str(uuid4()),
+            }))
+            companion_session = success(client.get(f'/api/companion/sessions/{companion_sid}', headers=headers))
+            if not first_companion['reply'].strip() or not second_companion['reply'].strip() or len(companion_session['messages']) != 4:
+                raise RuntimeError('probe_failed:companion_continuity')
             success(client.delete(f"/api/product/cards/{card['card_id']}?expected_revision=1", headers=headers), 204)
-            print(json.dumps({'status': 'passed', 'supplier_calls': 2, 'structured_understanding': True,
+            print(json.dumps({'status': 'passed', 'supplier_calls': 4, 'structured_understanding': True,
                               'user_correction_confirmed': True, 'owned_card_saved': True, 'next_conversation_memory_sent': True,
-                              'withdrawn_card_removed': not success(client.get('/api/product/cards'))}))
+                              'companion_continuity': True, 'withdrawn_card_removed': not success(client.get('/api/product/cards'))}))
     return 0
 
 

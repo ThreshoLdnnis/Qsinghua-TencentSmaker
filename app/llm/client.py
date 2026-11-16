@@ -33,6 +33,14 @@ class DeepSeekClient:
     async def generate_reply(self, messages: Sequence[Message]) -> str:
         return await self._generate(messages, SYSTEM_PROMPT, PROMPT_VERSION)
 
+    async def generate_with_system(self, messages: Sequence[Message], *, system_prompt: str, prompt_version: str) -> str:
+        """Generate a natural reply with a caller-owned, reviewed system prompt.
+
+        Product companion routes use this narrow seam to keep role/world instructions
+        separate from the existing structured-support prompt.
+        """
+        return await self._generate(messages, system_prompt, prompt_version)
+
     async def generate_structured(self, *, system_prompt: str, request_json: str) -> str:
         # Separate system instructions; preserve the existing chat endpoint and transport.
         from app.psychology.prompts import PROMPT_VERSION as psychology_prompt_version

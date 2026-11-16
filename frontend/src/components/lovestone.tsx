@@ -17,6 +17,7 @@ import { CaseForgeView } from "./support-views";
 import { CinematicCanvas, CinematicArchive } from "./cinematic-reflections";
 import { CinematicSignals } from "./cinematic-signals";
 import { CompanionPortal, companionProfiles, type CompanionProfile } from "./companion-world";
+import { createCompanionSession, getCompanionSession, sendCompanionMessage, type CompanionReply } from "../lib/companion-client";
 import { useSupportJourney } from "./use-support-journey";
 import { projectReflection } from "../lib/support-presentation";
 import type { MemoryReference, SupportResponse } from "../lib/support-types";
@@ -33,6 +34,7 @@ const nav = [
   { id: "archive", label: "成长档案", icon: BookOpen },
 ] as const;
 type MainView = (typeof nav)[number]["id"];
+type CompanionTurn = { role: "user" | "assistant"; content: string };
 type View = MainView | "caseforge";
 const choices = ["keep", "release", "next"] as const;
 const choiceIcons = { keep: Star, release: Feather, next: Compass };
@@ -94,6 +96,9 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const companion = companionProfiles.find((profile) => profile.id === companionId) ?? companionProfiles[0];
   const [companionInvited, setCompanionInvited] = useState(false);
   const [showCompanionChoice, setShowCompanionChoice] = useState(false);
+  const [companionSessionId, setCompanionSessionId] = useState<string | null>(null);
+  const [companionTurns, setCompanionTurns] = useState<CompanionTurn[]>([]);
+  const [companionMemoryRefs, setCompanionMemoryRefs] = useState<CompanionReply["memory_refs"]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const focusDestination = useRef(false);
@@ -148,6 +153,25 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
   }, []);
+
+  useEffect(() => {
+    if (!liveEnabled || !authenticated || !account?.csrf_token || !account.user?.id) return;
+    const storageKey = `lovestone-companion-session:${account.user.id}:${companion.id}`;
+    const storedSessionId = window.localStorage.getItem(storageKey);
+    if (!storedSessionId) return;
+    const controller = new AbortController();
+    void getCompanionSession(storedSessionId, account.csrf_token, controller.signal)
+      .then((session) => {
+        if (session.status !== "ACTIVE") {
+          window.localStorage.removeItem(storageKey);
+          return;
+        }
+        setCompanionSessionId(session.session_id);
+        setCompanionTurns(session.messages.map((message) => ({ role: message.role, content: message.content })));
+      })
+      .catch(() => window.localStorage.removeItem(storageKey));
+    return () => controller.abort();
+  }, [account?.csrf_token, account?.user?.id, authenticated, companion.id, liveEnabled]);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -237,9 +261,31 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
       if (liveEnabled) {
         if (!authenticated) throw new Error("请先登录自己的账号，再使用真实支持。");
         if (!backend) throw new Error("支持服务暂时未连接，请重新连接后再试。");
-        if (!await journey.ensureSession() || request.current !== controller) return;
-        const result = await journey.send({ content: text, request_id: crypto.randomUUID(), model_consent: true, use_memories: includeMemories });
-        if (result && request.current === controller) applyResponse(result, text);
+        const accountUserId = account?.user?.id;
+        if (!account?.csrf_token || !accountUserId) throw new Error("账号会话已过期，请重新登录后再试。");
+        setDraft(null); setFields(null); setUnderstandingId(null); setOutcome(null); setSaved(false);
+        let sessionId = companionSessionId;
+        if (!sessionId) {
+          const session = await createCompanionSession(account.csrf_token, controller.signal);
+          if (request.current !== controller) return;
+          sessionId = session.session_id;
+          setCompanionSessionId(sessionId);
+          window.localStorage.setItem(`lovestone-companion-session:${accountUserId}:${companion.id}`, sessionId);
+        }
+        const result = await sendCompanionMessage({
+          sessionId,
+          csrfToken: account.csrf_token,
+          companionId: companion.id as CompanionReply["companion_id"],
+          content: text,
+          requestId: crypto.randomUUID(),
+          useMemories: includeMemories,
+          signal: controller.signal,
+        });
+        if (request.current !== controller) return;
+        setCompanionTurns((current) => [...current, { role: "user", content: text }, { role: "assistant", content: result.reply }]);
+        setCompanionMemoryRefs(result.memory_refs);
+        setInput((current) => current.trim() === text.trim() ? "" : current);
+        setShowCompanionChoice(false);
       } else {
         const result = await demoAgent.reflect({ text, previous: cards[0] }, controller.signal);
         if (request.current !== controller) return;
@@ -293,12 +339,20 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
     setCompanionId(profile.id);
     setCompanionInvited(false);
     setShowCompanionChoice(false);
+    setCompanionSessionId(null);
+    setCompanionTurns([]);
+    setCompanionMemoryRefs([]);
+    setError("");
   }
 
   function inviteCompanion(profile: CompanionProfile) {
     setCompanionId(profile.id);
     setCompanionInvited(true);
     setShowCompanionChoice(false);
+    setCompanionSessionId(null);
+    setCompanionTurns([]);
+    setCompanionMemoryRefs([]);
+    setError("");
     setInput((current) => {
       const isCompanionOpening = companionProfiles.some((candidate) => candidate.opening === current);
       return !current.trim() || isCompanionOpening ? profile.opening : current;
@@ -390,6 +444,10 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
     setError("");
     setSaved(false);
     setShowCompanionChoice(false);
+    setCompanionSessionId(null);
+    setCompanionTurns([]);
+    setCompanionMemoryRefs([]);
+    if (authenticated && account?.user?.id) window.localStorage.removeItem(`lovestone-companion-session:${account.user.id}:${companion.id}`);
     setPrivacy(false);
     go("universe");
   }
@@ -398,6 +456,8 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
     request.current?.abort(); request.current = null; setPending(false);
     setDraft(null); setDraftMemories([]); setFields(null); setOutcome(null); setUnderstandingId(null); setSaved(false); setShowCompanionChoice(false); setError(""); setConsent(false); setUseMemories(false);
     setSupportTexts({ keep: "", release: "", next: "" }); setRemember(false); saveOperation.current = null;
+    setCompanionSessionId(null); setCompanionTurns([]);
+    setCompanionMemoryRefs([]);
     setDemoMode((current) => !current);
   }
 
@@ -474,22 +534,22 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                   <strong>{liveEnabled ? "账号支持" : "独立本地演示"}</strong>
                   <button type="button" className="text-button" disabled={pending} onClick={switchMode}>{liveEnabled ? "切换到本地演示" : "切换到账号支持"}</button>
                 </div>}
-                {liveEnabled && !authenticated && <p className="inline-status" role="status">登录自己的账号后，可以生成理解、确认和保存经历卡。也可以主动选择独立本地演示。</p>}
+                {liveEnabled && !authenticated && <p className="inline-status" role="status">登录自己的账号后，才能和旅伴连续聊天并让它记住这段会话。也可以主动选择独立本地演示。</p>}
                 <form className="agent-composer-form" onSubmit={generate}>
                   <label htmlFor="story-input" className="sr-only">说说发生了什么</label>
                   <div className="agent-composer">
                     <textarea ref={inputField} id="story-input" rows={1} placeholder={`和${companion.name}聊点今天的事…`} maxLength={maxInputLength} value={input} disabled={pending || (liveEnabled && !authenticated)} onChange={(e) => setInput(e.target.value)} />
                     {pending ? <button type="button" className="agent-send" onClick={cancel} aria-label="停止这次请求"><X size={20} /></button>
-                      : <button type="submit" className="agent-send" disabled={!input.trim() || (liveEnabled && !consent) || !connectionReady} aria-label="生成理解草稿"><ArrowRight size={22} /></button>}
+                      : <button type="submit" className="agent-send" disabled={!input.trim() || (liveEnabled && !consent) || !connectionReady} aria-label={liveEnabled ? "发送给旅伴" : "开始演示对话"}><ArrowRight size={22} /></button>}
                   </div>
                   <div className="input-meta">
                     <button type="button" className="text-button" disabled={pending} onClick={() => setInput(demoSample)}><Sparkles size={14} /> 使用虚构示例</button>
                     <span>{input.length} / {maxInputLength}</span>
                   </div>
                   {liveEnabled && authenticated && <label className="consent-box"><input type="checkbox" checked={useMemories} disabled={pending}
-                    onChange={(event) => { setUseMemories(event.target.checked); setConsent(false); }} /><span>这次回应使用我已允许未来使用的经历卡记忆。关闭后继续发送会清除本次对话上下文。</span></label>}
+                    onChange={(event) => { setUseMemories(event.target.checked); setConsent(false); }} /><span>这次回应使用我已允许未来使用的经历卡记忆。关闭后仍会继续当前旅伴会话，但不会读取经历卡。</span></label>}
                   {liveEnabled && <label className="consent-box"><input type="checkbox" checked={consent} disabled={pending || !authenticated} onChange={(e) => setConsent(e.target.checked)} /><span>{fixture ? "使用这次虚构输入与当前旅程，生成模拟回应。" : `同意将本次内容、当前会话${useMemories ? "和我已允许的经历卡记忆" : ""}发送给模型，生成这次回应。设备用途另行选择。`}</span></label>}
-                  <p className="agent-data-note"><LockKeyhole size={12} /> {!liveEnabled ? "本地模拟理解 · 请仅输入虚构内容 · 刷新即清除" : !authenticated ? "登录后使用账号支持" : !connectionReady ? "正在连接支持服务" : fixture ? "模拟回应 · 无真实设备连接 · 仅使用虚构内容" : "理解由你核对 · 回应未经专业审核"}</p>
+                  <p className="agent-data-note"><LockKeyhole size={12} /> {!liveEnabled ? "本地朋友式演示 · 请仅输入虚构内容 · 刷新即清除" : !authenticated ? "登录后和旅伴连续聊天" : !connectionReady ? "正在连接旅伴服务" : fixture ? "模拟朋友回应 · 无真实设备连接 · 仅使用虚构内容" : "自然对话由模型生成 · 未经专业审核"}</p>
                   {pending && <p className="inline-status" role="status">{companion.name}正在准备回应…</p>}
                   {visibleError && <p className="inline-status" role="alert">{visibleError}</p>}
                   {liveEnabled && authenticated && !connectionReady && <button type="button" className="text-button" disabled={pending} onClick={() => void journey.refreshAll()}>重新连接</button>}
@@ -514,7 +574,12 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                 <button type="button" aria-label="打开成长档案" onClick={() => go("archive")}><BookOpen size={20} /><span>成长档案</span></button>
               </div>
             </div>
-            {draft && fields && <div ref={chatThreadRef} tabIndex={-1} className="agent-chat-thread" aria-label={`${companion.name}与你的对话记录`}>
+            {companionTurns.length > 0 && <div ref={chatThreadRef} tabIndex={-1} className="agent-chat-thread agent-chat-thread-live" aria-label={`${companion.name}与你的对话记录`}>
+              {companionTurns.map((turn, index) => <div key={`${index}-${turn.role}`} className={`agent-chat-message ${turn.role === "user" ? "agent-chat-message-user" : "agent-chat-message-companion"}`}><span>{turn.role === "user" ? "你" : companion.name}</span><p>{turn.content}</p></div>)}
+              <p className="agent-chat-live-note"><Sparkles size={14} /> {companion.name}会记得这段会话。你可以继续问它的星球、家人、学校，也可以把今天的事说到一半就停下。</p>
+              {companionMemoryRefs.length > 0 && <details className="agent-chat-memory-status"><summary>本轮已授权 {companionMemoryRefs.length} 张经历卡作为关系记忆</summary><p>{companionMemoryRefs.map((reference) => reference.title || "已授权经历卡").join(" · ")}</p></details>}
+            </div>}
+            {!companionTurns.length && draft && fields && <div ref={chatThreadRef} tabIndex={-1} className="agent-chat-thread" aria-label={`${companion.name}与你的对话记录`}>
               <div className="agent-chat-message agent-chat-message-user"><span>你</span><p>{draft.input}</p></div>
               <div className="agent-chat-message agent-chat-message-companion"><span>{companion.name}</span><p>{draft.reply}</p></div>
               <details className="agent-chat-understanding" aria-label={`${companion.name}的暂定理解`}>

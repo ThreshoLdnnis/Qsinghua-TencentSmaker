@@ -4,6 +4,7 @@ Run ONE worker: active journeys are process-local; only explicitly saved cards p
 Never expose app.main on the public proxy, and never use client-supplied owner IDs.
 """
 import asyncio
+import hashlib
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
@@ -27,10 +28,12 @@ from app.llm.client import DeepSeekClient
 from app.llm.errors import LLMError
 from app.product.auth_store import AuthStore
 from app.product.card_store import CardStore
+from app.product.companion import CompanionId, COMPANIONS, build_companion_prompt, generate_companion_reply
 from app.psychology.prompts import PROMPT_VERSION
 from app.schemas.message import SendMessageRequest
 from app.schemas.workflow import CancelWorkflowRequest
-from app.services.session_service import SessionService
+from app.services.session_service import OperationRecord, SessionService
+from app.schemas.session import Message
 
 
 class StrictBody(BaseModel):
@@ -46,6 +49,23 @@ class Credentials(StrictBody):
 class ProductMessage(SendMessageRequest):
     model_consent: Literal[True]
     use_memories: bool = False
+
+
+class CompanionMessage(StrictBody):
+    content: str = Field(min_length=1, max_length=2000)
+    request_id: UUID
+    model_consent: Literal[True]
+    companion_id: CompanionId
+    use_memories: bool = False
+
+
+class CompanionResponse(BaseModel):
+    session_id: UUID
+    companion_id: CompanionId
+    reply: str
+    request_id: UUID
+    revision: int
+    memory_refs: list[dict] = Field(default_factory=list)
 
 
 class SaveCard(StrictBody):
@@ -122,7 +142,7 @@ def create_app(config: Settings | None = None, model_factory=None):
         finally:
             await app.state.scheduler.close()
 
-    app = FastAPI(title='Lingyv product API', version='0.8.0', lifespan=lifespan,
+    app = FastAPI(title='Lingyv product API', version='0.9.0', lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.auth_store, app.state.card_store = auth, cards
     app.state.product_settings = settings
@@ -287,6 +307,72 @@ def create_app(config: Settings | None = None, model_factory=None):
                             'psychology_enabled': True, 'psychology_demo_mode': False,
                             'psychology_review_status': 'unreviewed', 'max_steps': settings.runtime_max_steps,
                             'max_context_chars': settings.runtime_max_context_chars}}
+
+    @app.post('/api/companion/sessions', status_code=201)
+    async def create_companion_session():
+        store = current_store()
+        if len(store.list()) >= 20:
+            raise RuntimeFailure('session_limit_exceeded', '当前登录最多开启 20 次旅程，请退出后重新登录。')
+        return store.create()
+
+    @app.get('/api/companion/sessions/{session_id}')
+    async def get_companion_session(session_id: UUID):
+        return current_store().require(session_id).session.model_copy(deep=True)
+
+    @app.post('/api/companion/sessions/{session_id}/messages')
+    async def send_companion_message(session_id: UUID, body: CompanionMessage, request: Request):
+        store = current_store()
+        record = store.require(session_id)
+        if body.companion_id not in COMPANIONS:
+            raise RuntimeFailure('invalid_companion', '旅伴设定不存在。', 422)
+        if record.support_mode:
+            raise RuntimeFailure('session_mode_conflict', '该会话已经用于支持流程，请新建旅伴会话。')
+        if record.session.status.value != 'ACTIVE':
+            raise RuntimeFailure('session_ended', '该旅程已经结束，请创建新的旅伴会话。')
+        limits.check(('companion_model', request.state.owner), 40, 86400)
+        fingerprint = hashlib.sha256(body.model_dump_json().encode('utf-8')).hexdigest()
+        async with record.lock:
+            previous = record.operations.get(body.request_id)
+            if previous is not None:
+                if previous.fingerprint != fingerprint:
+                    raise RuntimeFailure('request_id_conflict', '同一请求编号不能用于不同的消息。')
+                if previous.error:
+                    raise LLMError(*previous.error)
+                return CompanionResponse.model_validate(previous.result)
+            if len(record.operations) >= settings.runtime_max_requests_per_session:
+                raise RuntimeFailure('request_budget_exceeded', '这段旅程的请求次数已用完，请新建一个旅伴会话。', 429)
+            operation = OperationRecord(fingerprint=fingerprint)
+            record.operations[body.request_id] = operation
+            _, memories = await asyncio.to_thread(cards.recall, request.state.owner) if body.use_memories else (0, [])
+            memory_refs = [
+                {'card_id': card.get('card_id'), 'revision': card.get('revision', 0), 'title': card.get('title', '已授权经历卡')}
+                for card in memories
+            ]
+            messages = [message.model_copy(deep=True) for message in record.session.messages]
+            user_message = Message(role='user', content=body.content.strip())
+            messages.append(user_message)
+            system_prompt = build_companion_prompt(body.companion_id, memories)
+            context_chars = len(system_prompt) + sum(len(message.content) for message in messages)
+            if context_chars > settings.runtime_max_context_chars:
+                operation.error = ('context_limit_exceeded', '这段旅程已经太长，请新建一个旅伴会话继续。', 413)
+                raise RuntimeFailure(*operation.error)
+            model = model_factory() if model_factory else DeepSeekClient(settings, scheduler=request.app.state.scheduler)
+            try:
+                reply = await generate_companion_reply(model, messages, companion_id=body.companion_id, memories=memories)
+                if not isinstance(reply, str) or not reply.strip():
+                    raise LLMError('invalid_model_response', '旅伴没有返回可用内容，请稍后重试。')
+                assistant = Message(role='assistant', content=reply.strip())
+                record.session.messages.extend([user_message, assistant])
+                record.session.revision += 1
+                response = CompanionResponse(
+                    session_id=session_id, companion_id=body.companion_id, reply=assistant.content,
+                    request_id=body.request_id, revision=record.session.revision, memory_refs=memory_refs,
+                )
+                operation.result = response.model_dump(mode='json')
+                return response
+            except (LLMError, RuntimeFailure) as error:
+                operation.error = (error.code, error.message, error.status_code)
+                raise
 
     @app.post('/api/support/sessions', status_code=201)
     async def create_session():
