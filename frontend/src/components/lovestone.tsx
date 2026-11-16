@@ -99,6 +99,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const request = useRef<AbortController | null>(null);
   const main = useRef<HTMLElement>(null);
   const confirmRef = useRef<HTMLHeadingElement>(null);
+  const chatThreadRef = useRef<HTMLDivElement>(null);
   const inputField = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -273,8 +274,8 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   }
 
   function scrollToDraft() {
-    confirmRef.current?.focus({ preventScroll: true });
-    confirmRef.current?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+    chatThreadRef.current?.focus({ preventScroll: true });
+    chatThreadRef.current?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }
 
   const dirty = !!draft && !!fields && hypothesisKeys.some((key) => draft.hypotheses[key] !== fields[key]);
@@ -399,6 +400,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const visibleCards = liveEnabled ? journey.cards.map(projectProductCard) : cards;
   const memoryReferences = draft ? draftMemories : journey.response?.memory_refs ?? [];
   const visibleError = error || (liveEnabled ? journey.error : "");
+  const understandingPreview = fields ? [fields.facts, fields.interpretation, fields.emotion, fields.needs].filter(Boolean).join(" · ").slice(0, 220) : "";
 
   if (view === "universe") return <><CinematicHome onNavigate={go} mainRef={main} />{accountControl && <div className="account-home-control">{accountControl}</div>}</>;
 
@@ -500,7 +502,41 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                 <button type="button" aria-label="打开成长档案" onClick={() => go("archive")}><BookOpen size={20} /><span>成长档案</span></button>
               </div>
             </div>
-            {draft && fields && <div className="agent-layout">
+            {draft && fields && <div ref={chatThreadRef} tabIndex={-1} className="agent-chat-thread" aria-label={`${companion.name}与你的对话记录`}>
+              <div className="agent-chat-message agent-chat-message-user"><span>你</span><p>{draft.input}</p></div>
+              <div className="agent-chat-message agent-chat-message-companion"><span>{companion.name}</span><p>{draft.reply}</p></div>
+              <section className="agent-chat-understanding" aria-label={`${companion.name}的暂定理解`}>
+                <div className="agent-chat-understanding-head"><span><Pencil size={14} /> {companion.name}现在这样理解</span><small>可修改 · 非诊断</small></div>
+                <p>{understandingPreview || "我还在等你给这段经历命名。"}</p>
+                <details className="agent-chat-edit" open={dirty || undefined}>
+                  <summary>打开编辑理解 <small>事实 · 解释 · 情绪 · 需要</small></summary>
+                  <div className="agent-chat-edit-body">
+                    <div className="field-grid">
+                      {hypothesisKeys.map((key) => <label key={key}>
+                        <span>{hypothesisLabels[key]}</span>
+                        <textarea maxLength={backend ? 1000 : maxHypothesisLength} disabled={pending} value={fields[key]} onChange={(e) => { setFields({ ...fields, [key]: e.target.value }); setOutcome(null); }} />
+                      </label>)}
+                    </div>
+                    <div className="flow-actions">
+                      <button type="button" className="btn btn-secondary" disabled={pending || confirmed || !currentRevision || (backend && journey.state?.session.status !== "ACTIVE")} onClick={() => void confirm()}><Check size={16} /> {confirmed ? "已确认" : "确认这份理解"}</button>
+                      <small aria-live="polite">{dirty ? "修改还没有确认" : confirmed ? `${companion.name}会用这份理解继续回应` : "可以先继续对话"}</small>
+                    </div>
+                  </div>
+                </details>
+              </section>
+              {canChooseSupport && <div className="agent-chat-choices" aria-label="选择对话方向">
+                <span>你想把这段对话带向哪里？</span>
+                <div>{choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={outcome?.choice === choice} onClick={() => selectSupport(choice)} disabled={pending}><Icon size={15} /><span>{supportChoices[choice].label}</span></button>; })}</div>
+              </div>}
+              {outcome && <div className="agent-chat-message agent-chat-message-companion agent-chat-outcome" aria-live="polite"><span>{companion.name}</span><p>{outcome.response}</p><small>{outcome.action}</small></div>}
+              {outcome && <div className="agent-chat-save">
+                {liveEnabled && <textarea value={supportTexts[outcome.choice]} maxLength={maxHypothesisLength} disabled={pending || saved} placeholder={outcome.choice === "keep" ? "写一句你想带走的话" : outcome.choice === "release" ? "写一句你愿意暂时放下的话" : "写下你愿意尝试的一小步"} onChange={(event) => { setSupportTexts({ ...supportTexts, [outcome.choice]: event.target.value }); setSaved(false); }} />}
+                {liveEnabled && <label className="consent-box"><input type="checkbox" checked={remember} disabled={pending || saved} onChange={(event) => { setRemember(event.target.checked); setSaved(false); }} /><span>允许这张经历卡用于未来支持对话</span></label>}
+                <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={pending || saved || (liveEnabled && !supportTexts[outcome.choice].trim())}>{saved ? <Check size={16} /> : <BookOpen size={16} />}{saved ? "已保存经历卡" : "保存这段经历"}</button>
+                {!liveEnabled && <small>仅留在本页内存，刷新后清除</small>}
+              </div>}
+            </div>}
+            {draft && fields && <div className="agent-layout legacy-agent-layout" aria-hidden="true">
               <div className="agent-main">
                 {draft && fields && <>
                   <section className="flow-panel reflection-panel" aria-labelledby="draft-title">
