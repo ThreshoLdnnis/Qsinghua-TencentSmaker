@@ -24,6 +24,18 @@ const journeys = [
   { id: "archive", title: "Grow", label: "成长" },
   { id: "agent", title: "Begin", label: "出发" },
 ] as const;
+const loopSteps = [
+  { index: "01", title: "Listen", label: "表达", body: "从一件具体的小事开始，不必先把自己说清楚。", destination: "agent" as const },
+  { index: "02", title: "Reflect", label: "改写", body: "拾光把理解拆成事实、解释、情绪、需要，你可以逐栏改写。", destination: "canvas" as const },
+  { index: "03", title: "Choose", label: "选择", body: "Keep、Release、Next 由你决定；任何理解都不是诊断。", destination: "agent" as const },
+  { index: "04", title: "Grow", label: "带走", body: "只有你主动保存的经历卡，才会在未来对话中被再次参考。", destination: "archive" as const },
+] as const;
+const loopPreview = [
+  { eyebrow: "你的一句话", title: "先从一件小事开始", chips: ["我准备好的想法没说完", "会议已经结束"], action: "Listen · 表达", helper: "把感受交给拾光，不必先整理好自己。" },
+  { eyebrow: "拾光的待确认理解", title: "四层画布，逐栏可改", chips: ["事实  发生了什么", "解释  可能意味着什么", "情绪  此刻的感受", "需要  想要怎样的支持"], action: "Reflect · 理解", helper: "AI 只提出假设；每一栏都由你确认、留空或改写。" },
+  { eyebrow: "你的选择", title: "把下一步交还给自己", chips: ["Keep · 留下", "Release · 放下", "Next · 向前"], action: "Choose · 选择", helper: "不是完成任务，而是选择此刻愿意带走的方向。" },
+  { eyebrow: "一张属于你的经历卡", title: "只保存你主动留下的部分", chips: ["已确认的四字段", "Keep / Next 文字", "未来参考：由你开启"], action: "Grow · 带走", helper: "下一次对话只有在你允许时，才会参考这张卡片。" },
+] as const;
 
 function BlurHeading({ reduced }: { reduced: boolean }) {
   const ref = useRef<HTMLHeadingElement>(null);
@@ -57,6 +69,7 @@ export function CinematicHome({ onNavigate, mainRef }: {
   const [reduced, setReduced] = useState<boolean | null>(null);
   const enabled = reduced === false;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeLoop, setActiveLoop] = useState(0);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -84,6 +97,11 @@ export function CinematicHome({ onNavigate, mainRef }: {
       media.pause();
     };
   }, [enabled]);
+  useEffect(() => {
+    if (reduced || menuOpen) return;
+    const timer = window.setInterval(() => setActiveLoop((current) => (current + 1) % loopSteps.length), 5200);
+    return () => window.clearInterval(timer);
+  }, [reduced, menuOpen]);
 
   function navigate(destination: Destination) {
     setMenuOpen(false);
@@ -145,6 +163,9 @@ export function CinematicHome({ onNavigate, mainRef }: {
           给感受一点空间，向内探索一整个宇宙。<br />
           与拾光一起，理解此刻的自己，找到属于你的下一步。
         </motion.p>
+        <motion.div className="cinema-value-bar" {...reveal(.95)} aria-label="LoveStone核心机制">
+          <span>THE LOOP</span><strong>表达 → 理解 → 纠正 → 带走</strong><small>AI 提出假设，你决定什么被记住。</small>
+        </motion.div>
         <motion.div className="cinema-actions" {...reveal(1.1)}>
           <motion.button type="button" className="liquid-glass-strong cinema-primary"
             whileHover={reduced ? undefined : { y: -3, scale: 1.025 }}
@@ -155,6 +176,25 @@ export function CinematicHome({ onNavigate, mainRef }: {
       </main>
 
       <footer className="cinema-bottom">
+        <motion.section className="cinema-loop" {...reveal(1.25)} aria-label="LoveStone核心闭环">
+          <div className="cinema-loop-head"><span>一段支持旅程，四个由你掌握的动作</span><small>0{activeLoop + 1} / 04</small></div>
+          <motion.div className="cinema-loop-preview" key={loopPreview[activeLoop].action}
+            initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : .28 }} aria-live="polite">
+            <div className="cinema-loop-preview-copy"><span>{loopPreview[activeLoop].eyebrow}</span><strong>{loopPreview[activeLoop].title}</strong><p>{loopPreview[activeLoop].helper}</p></div>
+            <div className="cinema-loop-preview-art" aria-hidden="true"><i /><i /><i /></div>
+            <div className="cinema-loop-preview-chips">{loopPreview[activeLoop].chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
+          </motion.div>
+          <div className="cinema-loop-steps">
+            {loopSteps.map((step, index) => <button type="button" key={step.index} className={index === activeLoop ? "is-active" : ""}
+              aria-current={index === activeLoop ? "step" : undefined}
+              onMouseEnter={() => setActiveLoop(index)} onFocus={() => setActiveLoop(index)} onClick={() => navigate(step.destination)}>
+              <i>{step.index}</i><span lang="en">{step.title}</span><small>{step.label}</small>
+            </button>)}
+          </div>
+          <motion.p key={loopSteps[activeLoop].index} initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : .35 }}>
+            {loopSteps[activeLoop].body}
+          </motion.p>
+        </motion.section>
         <motion.div className="cinema-journey" {...reveal(1.35)}>
           <span className="liquid-glass cinema-journey-label">每一种感受，都有值得被看见的宇宙</span>
           <nav className="cinema-journey-links" aria-label="探索 LoveStone">
@@ -179,7 +219,7 @@ export function CinematicHome({ onNavigate, mainRef }: {
           <h2 id="intro-title">你好，我是拾光。</h2>
           <p>我在静水湾收集微光，也陪你整理那些还没说清的感受。先从一件小事开始；你可以改写我的理解，再选择留住什么、放下什么，或者走出一小步。</p>
           <button type="button" className="btn btn-primary" onClick={() => navigate("agent")}>和拾光聊聊 <ArrowUpRight size={17} /></button>
-          <small>当前为演示体验，请使用虚构内容。理解草稿可修改、待确认；记录仅留在本页内存，刷新后清除。</small>
+          <small>当前为演示体验，请使用虚构内容。理解草稿可修改、待确认；独立演示刷新后清除，账号模式只有你主动保存的经历卡会留下。</small>
         </div>
       </div>
     </dialog>
