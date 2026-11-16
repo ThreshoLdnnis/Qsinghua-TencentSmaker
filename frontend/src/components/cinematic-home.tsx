@@ -219,7 +219,7 @@ export function CinematicHome({ onNavigate, mainRef }: {
           <h2 id="intro-title">你好，我是拾光。</h2>
           <p>我在静水湾收集微光，也陪你整理那些还没说清的感受。先从一件小事开始；你可以改写我的理解，再选择留住什么、放下什么，或者走出一小步。</p>
           <button type="button" className="btn btn-primary" onClick={() => navigate("agent")}>和拾光聊聊 <ArrowUpRight size={17} /></button>
-          <small>当前为演示体验，请使用虚构内容。理解草稿可修改、待确认；独立演示刷新后清除，账号模式只有你主动保存的经历卡会留下。</small>
+          <small>当前为演示体验，请使用虚构内容。理解草稿可修改、待确认；独立演示记录刷新后清除，完整产品中只有你主动保存的经历卡会进入账号。</small>
         </div>
       </div>
     </dialog>
