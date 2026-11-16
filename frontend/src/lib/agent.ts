@@ -117,9 +117,9 @@ function newReflection(input: string, reply: string, source: ReflectionSource, p
 }
 
 const followUp: Record<SupportChoice, string> = {
-  keep: "我们可以先看看，这次有什么值得留在心里。",
-  release: "这次也可以先聊聊，不急着找到答案。",
-  next: "如果你还想试一个小动作，我们可以等你说完再一起想。",
+  keep: "我会把这句话放进静水湾的灯里。明天回来时，我们再看看它有没有变得更亮。",
+  release: "今晚先不必解决它。我们去看一会儿潮汐，等答案自己靠岸。",
+  next: "如果你愿意，我陪你做一个两分钟以内的小动作，不用证明什么，也随时可以停下。",
 };
 
 export const demoAgent: AgentAdapter = {
@@ -127,8 +127,8 @@ export const demoAgent: AgentAdapter = {
     signal?.throwIfAborted();
     const input = cleanInput(text);
     const opening = input === demoSample
-      ? "想法没能说出口，那份闷可能还留在身上。我们可以一起看看，哪些是发生的事，哪些是你后来对自己的解释。"
-      : "我听见了。我们可以慢一点，把发生的事和心里浮起来的感受分别放在画布上。";
+      ? "我听见你在说一件没来得及发生完的事。先别急着判断自己。云岚星的学校里有一盏灯，专门留给那些没说出口的话。你想从哪一部分开始？"
+      : "我在。你不用把这件事讲完整。先告诉我，你现在最想让我陪你停在哪一个瞬间？";
     if (!previous) return newReflection(input, opening, "demo");
 
     const priorNeed = previous.hypotheses.needs;

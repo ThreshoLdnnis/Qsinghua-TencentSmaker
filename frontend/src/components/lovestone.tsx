@@ -93,6 +93,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   const [companionId, setCompanionId] = useState(companionProfiles[0].id);
   const companion = companionProfiles.find((profile) => profile.id === companionId) ?? companionProfiles[0];
   const [companionInvited, setCompanionInvited] = useState(false);
+  const [showCompanionChoice, setShowCompanionChoice] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const focusDestination = useRef(false);
@@ -210,14 +211,14 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   function applyResponse(result: SupportResponse, text: string) {
     setDraftMemories(result.memory_refs ?? []);
     if (!result.generated_understanding) {
-      setDraft(null); setFields(null); setOutcome(null); setUnderstandingId(null);
+      setDraft(null); setFields(null); setOutcome(null); setUnderstandingId(null); setShowCompanionChoice(false);
       setInput((current) => current.trim() === text.trim() ? "" : current);
       if (result.psychology?.result.route === "routine_support") setError("已收到回应，但未收到可确认的四栏理解，请稍后重试。");
       return;
     }
     const next = projectReflection({ understanding: result.generated_understanding, currentInput: text, reply: result.reply });
     if (!next) return;
-    setDraft(next); setFields(next.hypotheses); setUnderstandingId(next.id); setOutcome(null); setSaved(false);
+    setDraft(next); setFields(next.hypotheses); setUnderstandingId(next.id); setOutcome(null); setSaved(false); setShowCompanionChoice(false);
     setSupportTexts({ keep: "", release: "", next: "" }); setRemember(false); saveOperation.current = null;
     setInput((current) => current.trim() === text.trim() ? "" : current);
     requestAnimationFrame(scrollToDraft);
@@ -244,7 +245,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
         if (request.current !== controller) return;
         const shown = result;
         if (!shown) return;
-        setDraft(shown); setFields(shown.hypotheses); setUnderstandingId(null); setOutcome(null); setSaved(false);
+        setDraft(shown); setFields(shown.hypotheses); setUnderstandingId(null); setOutcome(null); setSaved(false); setShowCompanionChoice(false);
         setInput((current) => current.trim() === text ? "" : current);
         requestAnimationFrame(scrollToDraft);
       }
@@ -291,11 +292,13 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   function selectCompanion(profile: CompanionProfile) {
     setCompanionId(profile.id);
     setCompanionInvited(false);
+    setShowCompanionChoice(false);
   }
 
   function inviteCompanion(profile: CompanionProfile) {
     setCompanionId(profile.id);
     setCompanionInvited(true);
+    setShowCompanionChoice(false);
     setInput((current) => {
       const isCompanionOpening = companionProfiles.some((candidate) => candidate.opening === current);
       return !current.trim() || isCompanionOpening ? profile.opening : current;
@@ -386,13 +389,14 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
     setCards([]);
     setError("");
     setSaved(false);
+    setShowCompanionChoice(false);
     setPrivacy(false);
     go("universe");
   }
 
   function switchMode() {
     request.current?.abort(); request.current = null; setPending(false);
-    setDraft(null); setDraftMemories([]); setFields(null); setOutcome(null); setUnderstandingId(null); setSaved(false); setError(""); setConsent(false); setUseMemories(false);
+    setDraft(null); setDraftMemories([]); setFields(null); setOutcome(null); setUnderstandingId(null); setSaved(false); setShowCompanionChoice(false); setError(""); setConsent(false); setUseMemories(false);
     setSupportTexts({ keep: "", release: "", next: "" }); setRemember(false); saveOperation.current = null;
     setDemoMode((current) => !current);
   }
@@ -456,8 +460,16 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                 <span className="agent-intro-kicker">翎语 / COMPANION ARRIVAL</span>
                 <h1 id="agent-title" lang="en">A friend from another world.</h1>
                 <p className="agent-intro-subtitle">和{companion.name}说说话。<span>不必先整理好自己。</span></p>
-                <CompanionPortal selected={companion} onSelect={selectCompanion} onInvite={inviteCompanion} />
+                <details className="companion-world-drawer">
+                  <summary><span><Sparkles size={14} /> {companion.name} · {companion.planet}</span><small>打开旅伴的星球故事</small></summary>
+                  <CompanionPortal selected={companion} onSelect={selectCompanion} onInvite={inviteCompanion} />
+                </details>
                 {companionInvited && <p className="companion-invite-status" role="status">{companion.name} 已在你的空间里等着。把开场句改成你自己的话，再决定什么时候发送。</p>}
+                <div className="companion-welcome-message">
+                  <span>{companion.name}</span>
+                  <p>我刚从{companion.planet}回来。{companion.belief} 今天有没有一件事，想让我先陪你停一会儿？</p>
+                  <small>你也可以问我关于星球、家人、学校，或者那些只属于我们之间的小秘密。</small>
+                </div>
                 {productEnabled && <div className="input-meta">
                   <strong>{liveEnabled ? "账号支持" : "独立本地演示"}</strong>
                   <button type="button" className="text-button" disabled={pending} onClick={switchMode}>{liveEnabled ? "切换到本地演示" : "切换到账号支持"}</button>
@@ -466,7 +478,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                 <form className="agent-composer-form" onSubmit={generate}>
                   <label htmlFor="story-input" className="sr-only">说说发生了什么</label>
                   <div className="agent-composer">
-                    <textarea ref={inputField} id="story-input" rows={1} placeholder="此刻，有什么想说的吗？" maxLength={maxInputLength} value={input} disabled={pending || (liveEnabled && !authenticated)} onChange={(e) => setInput(e.target.value)} />
+                    <textarea ref={inputField} id="story-input" rows={1} placeholder={`和${companion.name}聊点今天的事…`} maxLength={maxInputLength} value={input} disabled={pending || (liveEnabled && !authenticated)} onChange={(e) => setInput(e.target.value)} />
                     {pending ? <button type="button" className="agent-send" onClick={cancel} aria-label="停止这次请求"><X size={20} /></button>
                       : <button type="submit" className="agent-send" disabled={!input.trim() || (liveEnabled && !consent) || !connectionReady} aria-label="生成理解草稿"><ArrowRight size={22} /></button>}
                   </div>
@@ -505,8 +517,8 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
             {draft && fields && <div ref={chatThreadRef} tabIndex={-1} className="agent-chat-thread" aria-label={`${companion.name}与你的对话记录`}>
               <div className="agent-chat-message agent-chat-message-user"><span>你</span><p>{draft.input}</p></div>
               <div className="agent-chat-message agent-chat-message-companion"><span>{companion.name}</span><p>{draft.reply}</p></div>
-              <section className="agent-chat-understanding" aria-label={`${companion.name}的暂定理解`}>
-                <div className="agent-chat-understanding-head"><span><Pencil size={14} /> {companion.name}现在这样理解</span><small>可修改 · 非诊断</small></div>
+              <details className="agent-chat-understanding" aria-label={`${companion.name}的暂定理解`}>
+                <summary className="agent-chat-understanding-head"><span><Pencil size={14} /> {companion.name}记下了这一刻</span><small>可修改 · 非诊断</small></summary>
                 <p>{understandingPreview || "我还在等你给这段经历命名。"}</p>
                 <details className="agent-chat-edit" open={dirty || undefined}>
                   <summary>打开编辑理解 <small>事实 · 解释 · 情绪 · 需要</small></summary>
@@ -523,10 +535,11 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                     </div>
                   </div>
                 </details>
-              </section>
-              {canChooseSupport && <div className="agent-chat-choices" aria-label="选择对话方向">
+              </details>
+              {canChooseSupport && !outcome && <div className="agent-chat-memory-trigger"><button type="button" onClick={() => setShowCompanionChoice(true)}>把这一刻带走 <ArrowRight size={14} /></button></div>}
+              {canChooseSupport && showCompanionChoice && !outcome && <div className="agent-chat-choices" aria-label="选择对话方向">
                 <span>你想把这段对话带向哪里？</span>
-                <div>{choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={outcome?.choice === choice} onClick={() => selectSupport(choice)} disabled={pending}><Icon size={15} /><span>{supportChoices[choice].label}</span></button>; })}</div>
+                <div>{choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={false} onClick={() => selectSupport(choice)} disabled={pending}><Icon size={15} /><span>{supportChoices[choice].label}</span></button>; })}</div>
               </div>}
               {outcome && <div className="agent-chat-message agent-chat-message-companion agent-chat-outcome" aria-live="polite"><span>{companion.name}</span><p>{outcome.response}</p><small>{outcome.action}</small></div>}
               {outcome && <div className="agent-chat-save">
