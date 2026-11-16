@@ -16,7 +16,6 @@ import { CinematicHome } from "./cinematic-home";
 import { CaseForgeView } from "./support-views";
 import { CinematicCanvas, CinematicArchive } from "./cinematic-reflections";
 import { CinematicSignals } from "./cinematic-signals";
-import { WorldMedia } from "./world-media";
 import { CompanionPortal, companionProfiles, type CompanionProfile } from "./companion-world";
 import { useSupportJourney } from "./use-support-journey";
 import { projectReflection } from "../lib/support-presentation";
@@ -431,7 +430,13 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
         <div key={view} className="view-enter">
           {view === "agent" && <section className="agent-view" aria-labelledby="agent-title">
             <div className="agent-intro-screen">
-              <WorldMedia src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4" poster="/images/agent-bg.jpg" shift />
+              <div className="agent-nebula" aria-hidden="true">
+                <div className="agent-nebula-cloud agent-nebula-cloud-one" />
+                <div className="agent-nebula-cloud agent-nebula-cloud-two" />
+                <div className="agent-nebula-stars">
+                  {Array.from({ length: 28 }, (_, index) => <i key={index} />)}
+                </div>
+              </div>
               <div className="agent-intro-shade" aria-hidden="true" />
               <div className="agent-intro-content">
                 <span className="agent-intro-kicker">翎语 / COMPANION ARRIVAL</span>
