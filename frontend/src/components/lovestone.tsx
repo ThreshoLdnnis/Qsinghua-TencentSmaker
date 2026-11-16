@@ -515,7 +515,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                   </section>
 
                   {canChooseSupport && <section className="flow-panel support-panel" aria-labelledby="support-title">
-                    <div className="panel-head"><span className="step-index">02</span><div><h2 id="support-title">你想把这段对话带向哪里？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : confirmed ? `你选的方式会改变${companion.name}的回应，以及${companion.planet}接下来的样子。` : "先继续和旅伴走下去。想改理解时，再打开上面的编辑入口。"}</p></div></div>
+                    <div className="panel-head"><span className="step-index">03</span><div><h2 id="support-title">你想把这段对话带向哪里？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : confirmed ? `你选的方式会改变${companion.name}的回应，以及${companion.planet}接下来的样子。` : "先继续和旅伴走下去。想改理解时，再打开上面的编辑入口。"}</p></div></div>
                     <div className="support-grid" aria-label="支持选择">
                       {choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={outcome?.choice === choice} onClick={() => selectSupport(choice)} disabled={pending}>
                         <Icon size={18} aria-hidden="true" /><strong>{supportChoices[choice].label}</strong><small>{supportChoices[choice].description}</small>
