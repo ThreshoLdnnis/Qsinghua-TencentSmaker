@@ -121,7 +121,9 @@
 .agent-orbit-actions span { position: absolute; top: calc(100% + 7px); white-space: nowrap; font-size: 10px; opacity: 0; transition: opacity .2s; }
 .agent-orbit-actions button:hover span,.agent-orbit-actions button:focus-visible span { opacity: 1; }
 .world-agent .agent-layout { width: min(100% - 64px,1180px); margin: 0 auto; padding: 80px 0 100px; gap: 32px; }
+.world-agent .agent-main { gap: 14px; }
 .world-agent .flow-panel { background: #0c0b10; border-color: #ffffff19; border-radius: 24px; padding: 27px; box-shadow: none; }
+.world-agent .reflection-panel, .world-agent .support-panel { padding: 22px; }
 .world-agent .panel-head { margin-bottom: 24px; }
 .world-agent .panel-head h2 { font-size: 20px; font-weight: 500; scroll-margin-top: 130px; }
 .world-agent .panel-head p { color: #a8a5b1; }
@@ -131,6 +133,16 @@
 .world-agent .field-grid label > span { color: #c6c0d4; margin-bottom: 8px; font-weight: 400; }
 .world-agent .field-grid textarea { border-radius: 12px; background: #ffffff04; border-color: #ffffff17; padding: 12px; min-height: 110px; color: #ece9f4; line-height: 1.8; }
 .world-agent .field-grid textarea:focus { border-color: #c3b2d385; box-shadow: 0 0 0 3px #bba0d10a; }
+.agent-understanding-drawer { margin-top: 16px; border: 1px solid #ffffff16; border-radius: 16px; background: #ffffff03; overflow: hidden; }
+.agent-understanding-drawer > summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 15px; color: #ece8f2; cursor: pointer; list-style: none; }
+.agent-understanding-drawer > summary::-webkit-details-marker { display: none; }
+.agent-understanding-drawer > summary::after { width: 7px; height: 7px; border-right: 1px solid #d6cce1; border-bottom: 1px solid #d6cce1; transform: rotate(45deg) translateY(-2px); transition: transform .2s ease; content: ""; }
+.agent-understanding-drawer[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+.agent-understanding-drawer > summary span { font-size: 12px; font-weight: 550; }
+.agent-understanding-drawer > summary small { margin-left: auto; color: #a9a1b4; font-size: 10px; }
+.agent-understanding-drawer-body { padding: 0 15px 15px; border-top: 1px solid #ffffff12; animation: rise-in .28s var(--ease) both; }
+.agent-understanding-drawer-body .field-grid { margin-top: 15px; }
+.world-agent .agent-understanding-drawer .flow-actions { padding-top: 14px; }
 .world-agent .btn { border-radius: 99px; font-weight: 500; }
 .world-agent .btn-primary { background: #e9e5ee; color: #17121c; box-shadow: none; }
 .world-agent .btn-secondary { background: #ffffff09; border-color: #ffffff30; color: #eeebf5; }
@@ -180,6 +192,9 @@
   .agent-orbit-actions { bottom: 50px; }
   .agent-orbit-actions span { opacity: .8; }
   .world-agent .flow-panel { padding: 21px 18px; border-radius: 20px; }
+  .world-agent .reflection-panel, .world-agent .support-panel { padding: 18px 15px; }
+  .agent-understanding-drawer > summary { align-items: start; flex-wrap: wrap; }
+  .agent-understanding-drawer > summary small { margin-left: 0; width: 100%; }
   .world-agent .panel-head h2 { font-size: 17px; }
   .world-agent .support-grid button { padding: 13px 9px; }
 }

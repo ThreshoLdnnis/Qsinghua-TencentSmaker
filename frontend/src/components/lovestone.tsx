@@ -279,7 +279,8 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
 
   const dirty = !!draft && !!fields && hypothesisKeys.some((key) => draft.hypotheses[key] !== fields[key]);
   const confirmed = !!draft && draft.status !== "proposed" && !dirty && (!liveEnabled || (backend && !!linkedUnderstanding && linkedUnderstanding.understanding.status === "confirmed" && currentRevision));
-  const sceneKey = confirmed && outcome ? outcome.choice : confirmed ? "confirmed" : draft ? "proposed" : "idle";
+  const canChooseSupport = !!draft && !safety && (!liveEnabled || confirmed);
+  const sceneKey = outcome ? outcome.choice : confirmed ? "confirmed" : draft ? "proposed" : "idle";
   const currentScene = {
     ...scene[sceneKey],
     title: `${companion.name} · ${scene[sceneKey].title.split(" · ").slice(1).join(" · ")}`,
@@ -326,7 +327,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   }
 
   function selectSupport(choice: SupportChoice) {
-    if (!draft || !confirmed || safety) return;
+    if (!draft || (!confirmed && liveEnabled) || safety) return;
     setOutcome(liveEnabled ? {
       choice, reflectionId: draft.id, reflectionRevision: draft.revision,
       response: `你选择了「${supportChoices[choice].label}」。用自己的话，为这段经历留一点记录。`,
@@ -336,7 +337,7 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
   }
 
   async function save() {
-    if (!draft || !outcome || !confirmed) return;
+    if (!draft || !outcome || (liveEnabled && !confirmed)) return;
     if (liveEnabled) {
       if (!backend || !authenticated) return;
       if (!linkedUnderstanding || !journey.state || !supportTexts[outcome.choice].trim()) return;
@@ -494,22 +495,27 @@ function LoveStoneWorkspace({ liveEnabled: productEnabled, account, accountContr
                   <section className="flow-panel reflection-panel" aria-labelledby="draft-title">
                     <div className="panel-head"><span className="step-index">02</span><div><h2 id="draft-title" tabIndex={-1} ref={confirmRef}>看看{companion.name}听见了什么</h2><p>包括「事实」在内，都可以重写、留空或确认。</p></div></div>
                     <div className="reply"><span><Aperture size={17} /> {companion.name} · {fixture ? "模拟回应" : draft.source === "fastapi" ? "对话回应，未经专业审核" : "演示回复，未经你确认"}</span><p>{draft.reply}</p></div>
-                    <div className="draft-note"><Pencil size={14} /> {liveEnabled ? "这是拾光的待确认理解。包括事实在内，每一栏都可以纠正或留空。" : "模拟理解 · 可修改的假设 · 非诊断"}</div>
+                    <div className="draft-note"><Pencil size={14} /> {liveEnabled ? `${companion.name}给出的暂定理解。需要时打开编辑；包括事实在内，每一栏都可以纠正或留空。` : "旅伴的暂定理解 · 可选修正 · 非诊断"}</div>
                     {backend && !currentRevision && <p role="status">这份理解的来源或版本已变化。<button type="button" className="text-button" disabled={pending} onClick={reloadUnderstanding}>载入当前版本重新核对</button></p>}
-                    <div className="field-grid">
-                      {hypothesisKeys.map((key) => <label key={key}>
-                        <span>{hypothesisLabels[key]}</span>
-                        <textarea maxLength={backend ? 1000 : maxHypothesisLength} disabled={pending} value={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.value })} />
-                      </label>)}
-                    </div>
-                    <div className="flow-actions">
-                      <button type="button" className="btn btn-secondary" disabled={pending || confirmed || !currentRevision || (backend && journey.state?.session.status !== "ACTIVE")} onClick={() => void confirm()}><Check size={16} /> {confirmed ? "理解已确认" : "确认当前理解"}</button>
-                      <small aria-live="polite">{dirty ? "有未确认的修改" : confirmed ? `${companion.name}会用你确认的版本来回应` : "确认后可选择怎样被支持"}</small>
-                    </div>
+                    <details className="agent-understanding-drawer" open={dirty || undefined}>
+                      <summary><span>编辑这份理解</span><small>事实 · 解释 · 情绪 · 需要</small></summary>
+                      <div className="agent-understanding-drawer-body">
+                        <div className="field-grid">
+                          {hypothesisKeys.map((key) => <label key={key}>
+                            <span>{hypothesisLabels[key]}</span>
+                            <textarea maxLength={backend ? 1000 : maxHypothesisLength} disabled={pending} value={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.value })} />
+                          </label>)}
+                        </div>
+                        <div className="flow-actions">
+                          <button type="button" className="btn btn-secondary" disabled={pending || confirmed || !currentRevision || (backend && journey.state?.session.status !== "ACTIVE")} onClick={() => void confirm()}><Check size={16} /> {confirmed ? "理解已确认" : "确认当前理解"}</button>
+                          <small aria-live="polite">{dirty ? "有未确认的修改" : confirmed ? `${companion.name}会用你确认的版本来回应` : "可选：确认后再继续"}</small>
+                        </div>
+                      </div>
+                    </details>
                   </section>
 
-                  {confirmed && !safety && <section className="flow-panel support-panel" aria-labelledby="support-title">
-                    <div className="panel-head"><span className="step-index">03</span><div><h2 id="support-title">此刻，希望怎么继续？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : `你选的方式会改变${companion.name}的回应，以及${companion.planet}接下来的样子。`}</p></div></div>
+                  {canChooseSupport && <section className="flow-panel support-panel" aria-labelledby="support-title">
+                    <div className="panel-head"><span className="step-index">02</span><div><h2 id="support-title">你想把这段对话带向哪里？</h2><p>{liveEnabled ? "为这段经历选择一个方向，用你自己的话记录。" : confirmed ? `你选的方式会改变${companion.name}的回应，以及${companion.planet}接下来的样子。` : "先继续和旅伴走下去。想改理解时，再打开上面的编辑入口。"}</p></div></div>
                     <div className="support-grid" aria-label="支持选择">
                       {choices.map((choice) => { const Icon = choiceIcons[choice]; return <button key={choice} type="button" aria-pressed={outcome?.choice === choice} onClick={() => selectSupport(choice)} disabled={pending}>
                         <Icon size={18} aria-hidden="true" /><strong>{supportChoices[choice].label}</strong><small>{supportChoices[choice].description}</small>
