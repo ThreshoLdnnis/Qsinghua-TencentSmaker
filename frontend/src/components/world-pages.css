@@ -85,7 +85,8 @@
 .agent-nebula-stars i:nth-child(26) { --star-x: 4%; --star-y: 84%; --star-size: 2px; --star-speed: 7.3s; --star-delay: -4.2s; }
 .agent-nebula-stars i:nth-child(27) { --star-x: 57%; --star-y: 52%; --star-size: 2px; --star-speed: 5.6s; --star-delay: -1.8s; }
 .agent-nebula-stars i:nth-child(28) { --star-x: 93%; --star-y: 10%; --star-size: 2px; --star-speed: 6.2s; --star-delay: -3.9s; }
-.world-agent .agent-intro-content { z-index: 4; }
+.world-agent .agent-intro-content { z-index: 4; width: min(100%, 900px); }
+.world-agent .agent-composer-form { width: min(100%, 700px); }
 .world-agent .agent-intro-kicker { color: #ffc6d8; letter-spacing: .18em; }
 .world-agent .agent-intro-subtitle { color: #f4dfdf; }
 .companion-invite-status { max-width: 560px; margin: -10px auto 14px; color: #ffd4de; font-size: 10px; line-height: 1.7; }
